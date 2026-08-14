@@ -7,3 +7,4 @@ dist/
 build/
 
 uploads/
+backend/firebase-service-account.json
