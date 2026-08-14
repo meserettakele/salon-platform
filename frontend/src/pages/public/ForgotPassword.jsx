@@ -1,0 +1,356 @@
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import API from "../../services/api";
+
+const ForgotPassword = () => {
+  const navigate = useNavigate();
+
+  const [step, setStep] = useState(1);
+  const [identifier, setIdentifier] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!identifier.trim()) {
+      setError("Please enter your registered phone number or email.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await API.post("/auth/forgot-password", {
+        identifier: identifier.trim(),
+      });
+
+      if (response.success) {
+        setSuccess(
+          `Reset code generated successfully. Your reset code is: ${response.data.resetCode}`,
+        );
+        setStep(2);
+      } else {
+        setError(response.message || "Unable to generate reset code.");
+      }
+    } catch (err) {
+      setError(err.message || "Unable to generate reset code.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!resetCode.trim()) {
+      setError("Please enter the 6-digit reset code.");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(resetCode.trim())) {
+      setError("Reset code must be exactly 6 digits.");
+      return;
+    }
+
+    if (!newPassword) {
+      setError("Please enter your new password.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await API.post("/auth/reset-password", {
+        identifier: identifier.trim(),
+        resetCode: resetCode.trim(),
+        newPassword,
+      });
+
+      if (response.success) {
+        setSuccess("Password reset successfully. Redirecting to login...");
+
+        setTimeout(() => {
+          navigate("/login", { replace: true });
+        }, 1500);
+      } else {
+        setError(response.message || "Unable to reset password.");
+      }
+    } catch (err) {
+      setError(err.message || "Unable to reset password.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        backgroundColor: "var(--color-bg-warm)",
+      }}
+    >
+      <div
+        className="glass-panel"
+        style={{
+          width: "100%",
+          maxWidth: "440px",
+          borderRadius: "var(--radius-ios)",
+          padding: "40px",
+          backgroundColor: "var(--color-card)",
+        }}
+      >
+        <div style={{ marginBottom: "32px", textAlign: "center" }}>
+          <h2
+            style={{
+              fontSize: "1.85rem",
+              color: "var(--color-dark)",
+              marginBottom: "8px",
+            }}
+          >
+            {step === 1 ? "Forgot Password?" : "Reset Password"}
+          </h2>
+
+          <p
+            style={{
+              color: "var(--color-muted)",
+              fontSize: "0.95rem",
+              lineHeight: "1.5",
+            }}
+          >
+            {step === 1
+              ? "Enter your registered phone number or email to receive a reset code."
+              : "Enter the 6-digit code and choose a new password."}
+          </p>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              backgroundColor: "rgba(211, 47, 47, 0.06)",
+              borderLeft: "4px solid var(--color-error)",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              color: "var(--color-error)",
+              fontSize: "0.9rem",
+              marginBottom: "24px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div
+            style={{
+              backgroundColor: "rgba(76, 175, 80, 0.08)",
+              borderLeft: "4px solid #4caf50",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              color: "#2e7d32",
+              fontSize: "0.9rem",
+              marginBottom: "24px",
+              lineHeight: "1.5",
+            }}
+          >
+            {success}
+          </div>
+        )}
+
+        {step === 1 ? (
+          <form onSubmit={handleRequestCode}>
+            <div style={{ marginBottom: "24px" }}>
+              <label
+                htmlFor="identifier"
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                  color: "var(--color-dark)",
+                }}
+              >
+                Phone Number or Email
+              </label>
+
+              <input
+                type="text"
+                id="identifier"
+                value={identifier}
+                onChange={(e) => {
+                  setIdentifier(e.target.value);
+                  setError("");
+                }}
+                placeholder="Enter phone number or email"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                padding: "16px",
+                backgroundColor: "var(--color-primary)",
+                color: "#FFFFFF",
+                borderRadius: "var(--radius-ui)",
+                fontSize: "1rem",
+                letterSpacing: "0.02em",
+                opacity: isSubmitting ? 0.7 : 1,
+                boxShadow: "0 8px 20px -6px rgba(233, 30, 99, 0.3)",
+              }}
+            >
+              {isSubmitting ? "Generating Code..." : "Send Reset Code"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleResetPassword}>
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                htmlFor="resetCode"
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                  color: "var(--color-dark)",
+                }}
+              >
+                6-Digit Reset Code
+              </label>
+
+              <input
+                type="text"
+                id="resetCode"
+                value={resetCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                  setResetCode(value);
+                  setError("");
+                }}
+                placeholder="Enter 6-digit code"
+                inputMode="numeric"
+                maxLength={6}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label
+                htmlFor="newPassword"
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                  color: "var(--color-dark)",
+                }}
+              >
+                New Password
+              </label>
+
+              <input
+                type="password"
+                id="newPassword"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setError("");
+                }}
+                placeholder="Enter new password"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div style={{ marginBottom: "28px" }}>
+              <label
+                htmlFor="confirmPassword"
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  marginBottom: "8px",
+                  color: "var(--color-dark)",
+                }}
+              >
+                Confirm New Password
+              </label>
+
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setError("");
+                }}
+                placeholder="Confirm new password"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                width: "100%",
+                padding: "16px",
+                backgroundColor: "var(--color-primary)",
+                color: "#FFFFFF",
+                borderRadius: "var(--radius-ui)",
+                fontSize: "1rem",
+                letterSpacing: "0.02em",
+                opacity: isSubmitting ? 0.7 : 1,
+                boxShadow: "0 8px 20px -6px rgba(233, 30, 99, 0.3)",
+              }}
+            >
+              {isSubmitting ? "Resetting Password..." : "Reset Password"}
+            </button>
+          </form>
+        )}
+
+        <div
+          style={{
+            marginTop: "28px",
+            textAlign: "center",
+            fontSize: "0.9rem",
+          }}
+        >
+          <Link
+            to="/login"
+            style={{
+              color: "var(--color-primary)",
+              fontWeight: "600",
+              textDecoration: "none",
+            }}
+          >
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ForgotPassword;

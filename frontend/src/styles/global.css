@@ -1,0 +1,151 @@
+/* src/styles/global.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap");
+
+:root {
+  /* Brand Luxury Palette Tokens */
+  --color-primary: #e91e63; /* Rose Pink */
+  --color-primary-rgb: 233, 30, 99;
+  --color-secondary: #d4af37; /* Gold Accent */
+  --color-secondary-rgb: 212, 175, 55;
+  --color-bg-warm: #fcfbf9; /* Warm Off-White Canvas */
+  --color-card: #ffffff;
+  --color-dark: #1a1a1a; /* Charcoal Text */
+  --color-muted: #7a7977;
+  --color-border: #eae8e4;
+  --color-error: #d32f2f;
+  --color-error-bg: rgba(211, 47, 47, 0.06);
+  --color-success: #388e3c;
+
+  /* Typography Infrastructure */
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Manrope", sans-serif;
+
+  /* App-like System Mechanics */
+  --radius-ios: 24px;
+  --radius-ui: 14px;
+  --transition-premium: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-luxury:
+    0 16px 40px -12px rgba(233, 30, 99, 0.08),
+    0 4px 24px -6px rgba(212, 175, 55, 0.04);
+
+  /* Glassmorphism Formula System */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: blur(20px);
+}
+
+/* CSS Reset Engine */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background-color: var(--color-bg-warm);
+  color: var(--color-dark);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Scale */
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+p {
+  line-height: 1.6;
+  color: var(--color-dark);
+}
+
+/* Base UI Controls Elements Standard Resets */
+input,
+select,
+textarea,
+.input-base {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-ui);
+  padding: 14px 18px;
+  color: var(--color-dark);
+  transition: var(--transition-premium);
+  width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.input-base:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.1);
+  outline: none;
+}
+
+button,
+.button-base {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: var(--transition-premium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-ui);
+  padding: 14px 28px;
+  white-space: nowrap;
+}
+
+button:disabled,
+.button-base:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Luxury Global Classes Utilities */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-luxury);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Core Engine System Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Structural Modifications */
+@media (max-width: 768px) {
+  :root {
+    --radius-ios: 20px;
+  }
+}
