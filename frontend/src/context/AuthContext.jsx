@@ -1,5 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase";
 import { authService } from "../services/authService";
 
 const AuthContext = createContext(null);
@@ -45,9 +47,30 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    try {
+      // Open Google popup and get Firebase credential
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+
+      // Exchange Firebase token for your app's JWT
+      const response = await authService.googleLogin(idToken);
+
+      if (response.success && response.data.token) {
+        localStorage.setItem("auth_token", response.data.token);
+        localStorage.setItem("auth_user", JSON.stringify(response.data.user));
+        setUser(response.data.user);
+      }
+      return response;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAuthenticated: !!user, login, logout }}
+      value={{ user, loading, isAuthenticated: !!user, login, logout, loginWithGoogle }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { User, Salon, Employee } = require("../models");
 const { generateToken } = require("../utils/jwtHelper");
@@ -260,3 +261,82 @@ exports.resetPassword = async ({ identifier, resetCode, newPassword }) => {
     message: "Password reset successfully.",
   };
 };
+
+// =========================================================
+// GOOGLE LOGIN — Find or Create User
+// =========================================================
+
+exports.googleLoginUser = async (decodedToken) => {
+  const { uid, email, name, picture } = decodedToken;
+
+  if (!email) {
+    const error = new Error(
+      "Google account does not have an associated email address."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Try to find an existing user by email
+  let user = await User.findOne({ where: { email } });
+
+  if (!user) {
+    // New Google user — create account with CUSTOMER role
+    // Phone placeholder satisfies the unique/allowNull constraint
+    const placeholderPhone = `google_${uid}`;
+    const randomPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+
+    user = await User.create({
+      fullName: name || "Google User",
+      email,
+      phone: placeholderPhone,
+      password: randomPassword,
+      role: "CUSTOMER",
+      profileImage: picture || null,
+      isActive: true,
+    });
+  }
+
+  const userResponse = user.toJSON();
+  delete userResponse.password;
+
+  // Build JWT payload — same logic as regular login
+  let managedSalonId = null;
+  if (userResponse.role === "OWNER") {
+    const associatedSalon = await Salon.findOne({
+      where: { ownerId: userResponse.id },
+      attributes: ["id"],
+    });
+    if (associatedSalon) managedSalonId = associatedSalon.id;
+  }
+
+  let employeeId = null;
+  let employeeSalonId = null;
+  if (userResponse.role === "EMPLOYEE") {
+    const employee = await Employee.findOne({
+      where: { userId: userResponse.id },
+      attributes: ["id", "salonId"],
+    });
+    if (employee) {
+      employeeId = employee.id;
+      employeeSalonId = employee.salonId;
+    }
+  }
+
+  const token = generateToken({
+    id: userResponse.id,
+    role: userResponse.role,
+    ...(managedSalonId && { salonId: managedSalonId }),
+    ...(employeeId && { employeeId }),
+    ...(employeeSalonId && { employeeSalonId }),
+  });
+
+  return {
+    token,
+    user: userResponse,
+    salonId: managedSalonId,
+    employeeId,
+    employeeSalonId,
+  };
+};
+

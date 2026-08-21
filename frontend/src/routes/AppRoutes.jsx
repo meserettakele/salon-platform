@@ -48,6 +48,9 @@ import EmployeeDashboard from "../pages/employee/EmployeeDashboard";
 import EmployeeBookings from "../pages/employee/EmployeeBookings";
 import EmployeeProfile from "../pages/employee/EmployeeProfile";
 
+// Shared Pages (used across multiple roles)
+import NotificationsPage from "../pages/shared/NotificationsPage";
+
 export const AppRoutes = () => {
   return (
     <Routes>
@@ -195,6 +198,14 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/owner/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["OWNER"]}>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Employee Workspace Routes */}
         <Route
@@ -220,6 +231,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
               <EmployeeProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employee/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />
@@ -272,6 +291,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
               <AdminProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <NotificationsPage />
             </ProtectedRoute>
           }
         />

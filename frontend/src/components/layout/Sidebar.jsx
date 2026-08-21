@@ -29,7 +29,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
       { path: "/customer/book", label: "📅 Book Appointment" },
       { path: "/customer/appointments", label: "📅 Booking History" },
       { path: "/customer/transactions", label: "💳 Transactions" },
-      { path: "/customer/notifications", label: "Notifications" },
+      { path: "/customer/notifications", label: "🔔 Notifications" },
     ],
     OWNER: [
       { path: "/owner/dashboard", label: "🏠 Dashboard" },
@@ -40,11 +40,13 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
       { path: "/owner/bookings", label: "📅 Bookings" },
       { path: "/owner/customers", label: "👥 Customers" },
       { path: "/owner/transactions", label: "💳 Transactions" },
+      { path: "/owner/notifications", label: "🔔 Notifications" },
     ],
     EMPLOYEE: [
       { path: "/employee/dashboard", label: "🏠 Dashboard" },
       { path: "/employee/bookings", label: "📅 My Bookings" },
       { path: "/employee/profile", label: "👤 My Profile" },
+      { path: "/employee/notifications", label: "🔔 Notifications" },
     ],
     ADMIN: [
       { path: "/admin/dashboard", label: "🏠 Dashboard" },
@@ -53,11 +55,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
       { path: "/admin/bookings", label: "📅 Bookings Monitor" },
       { path: "/admin/reports", label: "📊 System Reports" },
       { path: "/admin/profile", label: "👤 Admin Profile" },
-    ],
-    EMPLOYEE: [
-      { path: "/employee/dashboard", label: "🏠 Dashboard" },
-      { path: "/employee/bookings", label: "📅 My Bookings" },
-      { path: "/employee/profile", label: "👤 My Profile" },
+      { path: "/admin/notifications", label: "🔔 Notifications" },
     ],
   };
 

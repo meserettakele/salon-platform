@@ -1,4 +1,7 @@
 const authService = require("../services/authService");
+const { getAuth } = require("firebase-admin/auth");
+require("../config/firebaseAdmin"); // ensure Firebase Admin app is initialized
+
 
 exports.register = async (req, res) => {
   try {
@@ -81,3 +84,39 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
+
+// =========================================================
+// GOOGLE LOGIN
+// =========================================================
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Firebase ID token is required.",
+        data: null,
+      });
+    }
+
+    // Verify the Firebase ID token using Admin SDK (modular API)
+    const decodedToken = await getAuth().verifyIdToken(idToken);
+
+    const result = await authService.googleLoginUser(decodedToken);
+
+    return res.status(200).json({
+      success: true,
+      message: "Google authentication successful.",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Server error during Google authentication.",
+      data: null,
+    });
+  }
+};
+

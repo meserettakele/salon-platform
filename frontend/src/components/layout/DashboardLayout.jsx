@@ -165,6 +165,13 @@ export const DashboardLayout = () => {
     return "/customer/settings";
   };
 
+  const getNotificationsPath = () => {
+    if (currentRole === "OWNER") return "/owner/notifications";
+    if (currentRole === "ADMIN") return "/admin/notifications";
+    if (currentRole === "EMPLOYEE") return "/employee/notifications";
+    return "/customer/notifications";
+  };
+
   return (
     <div
       style={{
@@ -441,6 +448,31 @@ export const DashboardLayout = () => {
                       </div>
                     ))
                   )}
+                </div>
+                {/* View all link */}
+                <div
+                  style={{
+                    padding: "10px 16px",
+                    borderTop: "1px solid #f3f4f6",
+                    textAlign: "center",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      setIsNotificationsOpen(false);
+                      navigate(getNotificationsPath());
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#db2777",
+                      fontSize: "0.8rem",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                    }}
+                  >
+                    View all notifications →
+                  </button>
                 </div>
               </div>
             )}
