@@ -23,6 +23,7 @@ import CustomerNotifications from "../pages/customer/CustomerNotifications";
 import { CustomerProfile } from "../pages/customer/CustomerProfile";
 
 import { PaymentPage } from "../pages/customer/PaymentPage";
+import PaymentSuccessPage from "../pages/customer/PaymentSuccessPage";
 
 // Owner Workspace Pages
 import { OwnerDashboard } from "../pages/owner/OwnerDashboard";
@@ -121,6 +122,16 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute allowedRoles={["CUSTOMER"]}>
               <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Chapa payment return page */}
+        <Route
+          path="/customer/payment/success"
+          element={
+            <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+              <PaymentSuccessPage />
             </ProtectedRoute>
           }
         />

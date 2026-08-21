@@ -5,9 +5,22 @@ const createNotification = require("../utils/createNotification");
 
 exports.createPayment = async (req, res) => {
   try {
-    const payment = await paymentService.createPayment(req.user.id, req.body);
+    const result = await paymentService.createPayment(req.user.id, req.body);
 
-    // Get appointment details with assigned employee and salon
+    // ── CHAPA: return checkout_url, let frontend redirect ──
+    if (result.isChapa) {
+      return res.status(200).json({
+        success: true,
+        message: "Chapa payment initialized. Redirect to checkout.",
+        data: {
+          checkout_url: result.checkout_url,
+          tx_ref: result.tx_ref,
+        },
+      });
+    }
+
+    // ── NON-CHAPA: payment recorded as PAID immediately ──
+    const payment = result.payment;
     const appointment =
       await paymentService.getAppointmentForPaymentNotification(
         payment.appointmentId || req.body.appointmentId,
@@ -56,6 +69,73 @@ exports.createPayment = async (req, res) => {
       success: false,
       message: err.message,
     });
+  }
+};
+
+// ================= CHAPA VERIFY (called on return redirect) =================
+
+exports.verifyChapaPayment = async (req, res) => {
+  const { tx_ref, status } = req.query;
+
+  const frontendBase =
+    process.env.CHAPA_RETURN_URL || "http://localhost:5173/customer/payment/success";
+
+  // If Chapa says the payment was cancelled/failed before we even check
+  if (status && status !== "success") {
+    return res.redirect(`${frontendBase}?status=failed&tx_ref=${tx_ref || ""}`);
+  }
+
+  if (!tx_ref) {
+    return res.redirect(`${frontendBase}?status=failed&reason=missing_tx_ref`);
+  }
+
+  try {
+    const { payment } = await paymentService.verifyChapaPayment(tx_ref);
+
+    // Fire notifications after successful Chapa verification
+    const appointment =
+      await paymentService.getAppointmentForPaymentNotification(
+        payment.appointmentId,
+      );
+
+    // 🔔 CUSTOMER NOTIFICATION
+    if (appointment?.customerId) {
+      await createNotification({
+        userId: appointment.customerId,
+        title: "Payment Successful ✅",
+        message:
+          "Your Chapa payment was verified and confirmed. Your appointment is ready!",
+        type: "PAYMENT_SUCCESSFUL",
+        bookingId: payment.appointmentId,
+      }).catch(() => {});
+    }
+
+    // 🔔 EMPLOYEE NOTIFICATION
+    if (appointment?.employee?.userId) {
+      await createNotification({
+        userId: appointment.employee.userId,
+        title: "Payment Received",
+        message: "Customer payment via Chapa confirmed for your appointment.",
+        type: "PAYMENT_RECEIVED",
+        bookingId: payment.appointmentId,
+      }).catch(() => {});
+    }
+
+    // 🔔 SALON OWNER NOTIFICATION
+    if (appointment?.salon?.ownerId) {
+      await createNotification({
+        userId: appointment.salon.ownerId,
+        title: "Payment Received",
+        message: "Customer paid via Chapa for an appointment at your salon.",
+        type: "PAYMENT_RECEIVED",
+        bookingId: payment.appointmentId,
+      }).catch(() => {});
+    }
+
+    return res.redirect(`${frontendBase}?status=success&tx_ref=${tx_ref}`);
+  } catch (err) {
+    console.error("Chapa verification error:", err.message);
+    return res.redirect(`${frontendBase}?status=failed&tx_ref=${tx_ref || ""}`);
   }
 };
 // ================= CUSTOMER VIEW PAYMENT =================

@@ -3,15 +3,17 @@ const router = express.Router();
 
 const {
   createPayment,
-
   getPayment,
-
   updatePaymentStatus,
-
   viewPayments,
+  verifyChapaPayment,
 } = require("../controllers/paymentController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
+
+// ================= CHAPA RETURN REDIRECT (no auth — browser redirect from Chapa) =================
+// Chapa redirects the customer here after payment. We verify and then redirect to frontend.
+router.get("/chapa/verify", verifyChapaPayment);
 
 // ================= CUSTOMER PAYMENT =================
 
@@ -29,7 +31,6 @@ router.get(
 router.get("/owner/history", protect, authorize("OWNER"), viewPayments);
 
 // ================= PAYMENT STATUS UPDATE =================
-// Later this can be connected to payment gateway/admin
 
 router.patch(
   "/:id/status",
@@ -39,3 +40,4 @@ router.patch(
 );
 
 module.exports = router;
+

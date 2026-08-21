@@ -6,6 +6,7 @@ const {
   Service,
   Employee,
 } = require("../models");
+const chapaService = require("./chapaService");
 
 // ================= CUSTOMER CREATE PAYMENT =================
 
@@ -14,35 +15,28 @@ exports.createPayment = async (customerId, paymentData) => {
 
   // 1. Verify appointment exists & belongs to customer
   const appointment = await Appointment.findOne({
-    where: {
-      id: appointmentId,
-      customerId,
-    },
+    where: { id: appointmentId, customerId },
+    include: [
+      { model: User, as: "customer", attributes: ["id", "fullName", "email", "phone"] },
+    ],
   });
 
   if (!appointment) {
-    const error = new Error(
-      "Appointment not found or does not belong to this customer.",
-    );
+    const error = new Error("Appointment not found or does not belong to this customer.");
     error.statusCode = 404;
     throw error;
   }
 
   // 2. Ensure appointment is accepted
   if (appointment.bookingStatus !== "ACCEPTED") {
-    const error = new Error(
-      "Payment can only be made for accepted appointments.",
-    );
+    const error = new Error("Payment can only be made for accepted appointments.");
     error.statusCode = 400;
     throw error;
   }
 
-  // 3. Resolve amount safely across possible column names
+  // 3. Resolve amount
   const amountToPay =
-    appointment.bookedPrice ||
-    appointment.totalAmount ||
-    appointment.price ||
-    0;
+    appointment.bookedPrice || appointment.totalAmount || appointment.price || 0;
 
   if (!amountToPay || amountToPay <= 0) {
     const error = new Error("Invalid appointment price.");
@@ -51,54 +45,77 @@ exports.createPayment = async (customerId, paymentData) => {
   }
 
   // 4. Check for existing payment
-  let payment = await Payment.findOne({
-    where: {
-      appointmentId,
-    },
-  });
+  let payment = await Payment.findOne({ where: { appointmentId } });
 
-  if (payment) {
-    // If already paid, reject duplicate payment
-    if (payment.paymentStatus === "PAID") {
-      const error = new Error("This appointment has already been paid.");
-      error.statusCode = 400;
-      throw error;
-    }
-
-    // If PENDING or FAILED, update existing record
-    payment.paymentMethod = paymentMethod;
-    payment.amount = amountToPay;
-
-    if (transactionId) {
-      payment.transactionId = transactionId;
-    }
-
-    // Payment has now been successfully submitted
-    payment.paymentStatus = "PAID";
-
-    await payment.save();
-
-    // Update appointment paymentStatus to PAID
-    appointment.paymentStatus = "PAID";
-    await appointment.save();
-
-    return payment;
+  if (payment && payment.paymentStatus === "PAID") {
+    const error = new Error("This appointment has already been paid.");
+    error.statusCode = 400;
+    throw error;
   }
 
-  // 5. Create new payment record
-  payment = await Payment.create({
-    appointmentId,
-    amount: amountToPay,
-    paymentMethod,
-    transactionId: transactionId || null,
-    paymentStatus: "PAID",
-  });
+  // ============================================================
+  // CHAPA FLOW — initialize checkout, keep payment as PENDING
+  // The payment is only marked PAID after Chapa verification
+  // ============================================================
+  if (paymentMethod === "CHAPA") {
+    const customer = appointment.customer;
+    const nameParts = (customer?.fullName || "Customer User").split(" ");
 
-  // 6. Update appointment paymentStatus to PAID
+    const { checkout_url, tx_ref } = await chapaService.initializePayment({
+      amount: amountToPay,
+      email: customer?.email || "customer@salon.com",
+      firstName: nameParts[0] || "Customer",
+      lastName: nameParts.slice(1).join(" ") || "User",
+      phone: customer?.phone || "",
+      description: `Booking #${appointmentId} payment`,
+      returnUrl: process.env.CHAPA_RETURN_URL,
+    });
+
+    // Save / update payment record as PENDING with the tx_ref
+    if (payment) {
+      payment.paymentMethod = "CHAPA";
+      payment.amount = amountToPay;
+      payment.transactionId = tx_ref;
+      payment.paymentStatus = "PENDING";
+      await payment.save();
+    } else {
+      payment = await Payment.create({
+        appointmentId,
+        amount: amountToPay,
+        paymentMethod: "CHAPA",
+        transactionId: tx_ref,
+        paymentStatus: "PENDING",
+      });
+    }
+
+    // Return the checkout_url so the controller can send it to the frontend
+    return { checkout_url, tx_ref, payment, isChapa: true };
+  }
+
+  // ============================================================
+  // NON-CHAPA FLOW — cash/manual, mark PAID immediately (unchanged)
+  // ============================================================
+  if (payment) {
+    payment.paymentMethod = paymentMethod;
+    payment.amount = amountToPay;
+    if (transactionId) payment.transactionId = transactionId;
+    payment.paymentStatus = "PAID";
+    await payment.save();
+  } else {
+    payment = await Payment.create({
+      appointmentId,
+      amount: amountToPay,
+      paymentMethod,
+      transactionId: transactionId || null,
+      paymentStatus: "PAID",
+    });
+  }
+
+  // Update appointment paymentStatus to PAID
   appointment.paymentStatus = "PAID";
   await appointment.save();
 
-  return payment;
+  return { payment, isChapa: false };
 };
 
 // ================= CUSTOMER VIEW PAYMENT =================
@@ -256,4 +273,61 @@ exports.getAppointmentForPaymentNotification = async (appointmentId) => {
       },
     ],
   });
+};
+
+// ================= CHAPA VERIFICATION (called on return redirect) =================
+
+exports.verifyChapaPayment = async (tx_ref) => {
+  // 1. Find the pending payment by transaction ID (tx_ref)
+  const payment = await Payment.findOne({
+    where: { transactionId: tx_ref },
+    include: [
+      {
+        model: Appointment,
+        as: "appointment",
+      },
+    ],
+  });
+
+  if (!payment) {
+    const error = new Error("Payment record not found for this transaction.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Already confirmed — idempotent check
+  if (payment.paymentStatus === "PAID") {
+    return { payment, alreadyPaid: true };
+  }
+
+  // 2. Verify with Chapa API
+  // chapaData is response.data from Chapa — it has { status: "success", amount, tx_ref, ... }
+  const chapaData = await chapaService.verifyPayment(tx_ref);
+
+  // Accept if either the transaction status field says success
+  const txStatus = (chapaData.status || "").toLowerCase();
+  if (txStatus !== "success") {
+    console.warn("[PaymentService] Chapa tx status was:", txStatus, "for tx_ref:", tx_ref);
+    // Mark as FAILED
+    payment.paymentStatus = "FAILED";
+    await payment.save();
+    if (payment.appointment) {
+      payment.appointment.paymentStatus = "FAILED";
+      await payment.appointment.save();
+    }
+    const error = new Error("Payment was not successful. Status: " + txStatus);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 3. Mark payment and appointment as PAID
+  payment.paymentStatus = "PAID";
+  await payment.save();
+
+  if (payment.appointment) {
+    payment.appointment.paymentStatus = "PAID";
+    await payment.appointment.save();
+  }
+
+  return { payment, alreadyPaid: false };
 };
