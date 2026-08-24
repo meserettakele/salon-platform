@@ -16,6 +16,7 @@ import {
 } from "react-icons/fi";
 
 import { useAuth } from "../../context/AuthContext";
+import { useDateTime } from "../../context/DateTimeContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
@@ -28,6 +29,7 @@ import {
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
+  const { formatDate, formatTime } = useDateTime();
   const navigate = useNavigate();
 
   const [bookings, setBookings] = useState([]);
@@ -156,42 +158,7 @@ export const EmployeeDashboard = () => {
     }
   };
 
-  // =====================================================
-  // FORMAT DATE / TIME
-  // =====================================================
 
-  const formatTime = (time) => {
-    if (!time) return "Time not set";
-
-    const parts = time.split(":");
-
-    if (parts.length < 2) return time;
-
-    let hour = parseInt(parts[0], 10);
-    const minute = parts[1];
-
-    const period = hour >= 12 ? "PM" : "AM";
-
-    hour = hour % 12 || 12;
-
-    return `${hour}:${minute} ${period}`;
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "";
-
-    const parsed = new Date(date);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return date;
-    }
-
-    return parsed.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   // =====================================================
   // STATUS STYLE
@@ -448,7 +415,7 @@ export const EmployeeDashboard = () => {
               style={{
                 fontSize: "0.95rem",
                 fontWeight: "700",
-                color: "#111827",
+                color: "var(--color-dark)",
                 margin: 0,
               }}
             >
@@ -458,7 +425,7 @@ export const EmployeeDashboard = () => {
             <p
               style={{
                 fontSize: "0.8rem",
-                color: "#6b7280",
+                color: "var(--color-muted)",
                 margin: "4px 0 0",
               }}
             >
@@ -489,7 +456,7 @@ export const EmployeeDashboard = () => {
               style={{
                 fontSize: "1.05rem",
                 fontWeight: "700",
-                color: "#111827",
+                color: "var(--color-dark)",
                 margin: 0,
               }}
             >
@@ -499,7 +466,7 @@ export const EmployeeDashboard = () => {
             <p
               style={{
                 fontSize: "0.8rem",
-                color: "#6b7280",
+                color: "var(--color-muted)",
                 margin: "2px 0 0",
               }}
             >
@@ -606,7 +573,7 @@ export const EmployeeDashboard = () => {
                       style={{
                         display: "block",
                         fontSize: "0.85rem",
-                        color: "#111827",
+                        color: "var(--color-dark)",
                       }}
                     >
                       {formatTime(booking.appointmentTime)}
@@ -625,7 +592,7 @@ export const EmployeeDashboard = () => {
                     <strong
                       style={{
                         fontSize: "0.9rem",
-                        color: "#111827",
+                        color: "var(--color-dark)",
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
@@ -638,7 +605,7 @@ export const EmployeeDashboard = () => {
                     <span
                       style={{
                         fontSize: "0.78rem",
-                        color: "#6b7280",
+                        color: "var(--color-muted)",
                         display: "flex",
                         alignItems: "center",
                         gap: "5px",
@@ -653,7 +620,7 @@ export const EmployeeDashboard = () => {
                       <span
                         style={{
                           fontSize: "0.72rem",
-                          color: "#9ca3af",
+                          color: "var(--color-muted-light)",
                           display: "flex",
                           alignItems: "center",
                           gap: "5px",
@@ -767,13 +734,14 @@ const statIconBox = (bgColor, textColor) => ({
 const statLabelStyle = {
   fontSize: "0.75rem",
   fontWeight: "600",
-  color: "#6b7280",
+  color: "var(--color-muted)",
   display: "block",
 };
 
 const statValueStyle = {
   fontSize: "1.5rem",
   fontWeight: "800",
+  color: "var(--color-dark)",
   margin: "2px 0 0",
   fontFamily: "Manrope, sans-serif",
 };
@@ -783,8 +751,8 @@ const tableHeaderContainer = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  borderBottom: "1px solid #f3f4f6",
-  backgroundColor: "#ffffff",
+  borderBottom: "1px solid var(--color-border)",
+  backgroundColor: "var(--color-card)",
 };
 
 const tableRowStyle = {
@@ -793,7 +761,7 @@ const tableRowStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   gap: "10px",
-  borderBottom: "1px solid #f8fafc",
+  borderBottom: "1px solid var(--color-border)",
 };
 
 const emptyContainer = {

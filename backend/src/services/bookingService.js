@@ -97,9 +97,12 @@ exports.getBookingRequests = async (ownerId, statusFilter) => {
 
 // =====================================================
 // OWNER ACCEPT / REJECT / COMPLETE BOOKING
-// =====================================================
-
-exports.updateBookingStatus = async (ownerId, appointmentId, newStatus) => {
+exports.updateBookingStatus = async (
+  ownerId,
+  appointmentId,
+  newStatus,
+  reason = null,
+) => {
   const allowedStatuses = ["ACCEPTED", "REJECTED", "COMPLETED"];
 
   if (!allowedStatuses.includes(newStatus)) {
@@ -126,7 +129,6 @@ exports.updateBookingStatus = async (ownerId, appointmentId, newStatus) => {
   }
 
   // ACCEPT
-
   if (newStatus === "ACCEPTED" && appointment.bookingStatus !== "PENDING") {
     const error = new Error("Only pending appointments can be accepted.");
 
@@ -135,7 +137,6 @@ exports.updateBookingStatus = async (ownerId, appointmentId, newStatus) => {
   }
 
   // REJECT
-
   if (newStatus === "REJECTED" && appointment.bookingStatus !== "PENDING") {
     const error = new Error("Only pending appointments can be rejected.");
 
@@ -144,9 +145,6 @@ exports.updateBookingStatus = async (ownerId, appointmentId, newStatus) => {
   }
 
   // COMPLETE
-
-  // COMPLETE
-
   if (newStatus === "COMPLETED") {
     if (
       appointment.bookingStatus !== "ACCEPTED" &&
@@ -170,9 +168,21 @@ exports.updateBookingStatus = async (ownerId, appointmentId, newStatus) => {
 
   if (newStatus === "REJECTED") {
     appointment.cancelledAt = new Date();
+    if (reason) {
+      appointment.rejectionReason = reason;
+    }
   }
 
   await appointment.save();
+
+  try {
+    const { notifyBookingStatusChange } = require("./telegramService");
+    notifyBookingStatusChange(appointment.id, newStatus).catch((e) =>
+      console.warn("Telegram status notification error:", e.message),
+    );
+  } catch (tgErr) {
+    console.warn("Telegram notification skip:", tgErr.message);
+  }
 
   return appointment;
 };

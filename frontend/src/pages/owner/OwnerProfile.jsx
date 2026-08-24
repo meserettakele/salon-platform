@@ -13,6 +13,7 @@ import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
 import api from "../../services/api";
 
 export const OwnerProfile = () => {
@@ -334,7 +335,7 @@ export const OwnerProfile = () => {
               style={{
                 fontSize: "1.5rem",
                 fontWeight: "800",
-                color: "#111827",
+                color: "var(--color-dark)",
                 margin: 0,
               }}
             >
@@ -353,8 +354,8 @@ export const OwnerProfile = () => {
                 style={{
                   padding: "5px 10px",
                   borderRadius: "999px",
-                  backgroundColor: "#fce7f3",
-                  color: "#be185d",
+                  backgroundColor: "var(--color-primary-light)",
+                  color: "var(--color-primary)",
                   fontSize: "0.72rem",
                   fontWeight: "800",
                 }}
@@ -367,8 +368,8 @@ export const OwnerProfile = () => {
                   style={{
                     padding: "5px 10px",
                     borderRadius: "999px",
-                    backgroundColor: "#f3f4f6",
-                    color: "#374151",
+                    backgroundColor: "var(--color-card-subtle)",
+                    color: "var(--color-dark)",
                     fontSize: "0.72rem",
                     fontWeight: "700",
                   }}
@@ -388,7 +389,7 @@ export const OwnerProfile = () => {
           gap: "6px",
           marginBottom: "20px",
           padding: "5px",
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "var(--color-card-subtle)",
           borderRadius: "10px",
           overflowX: "auto",
         }}
@@ -404,8 +405,8 @@ export const OwnerProfile = () => {
             padding: "11px 14px",
             cursor: "pointer",
             backgroundColor:
-              activeTab === "profile" ? "#ffffff" : "transparent",
-            color: activeTab === "profile" ? "#111827" : "#6b7280",
+              activeTab === "profile" ? "var(--color-card)" : "transparent",
+            color: activeTab === "profile" ? "var(--color-dark)" : "var(--color-muted)",
             fontWeight: "700",
           }}
         >
@@ -424,8 +425,8 @@ export const OwnerProfile = () => {
             padding: "11px 14px",
             cursor: "pointer",
             backgroundColor:
-              activeTab === "security" ? "#ffffff" : "transparent",
-            color: activeTab === "security" ? "#111827" : "#6b7280",
+              activeTab === "security" ? "var(--color-card)" : "transparent",
+            color: activeTab === "security" ? "var(--color-dark)" : "var(--color-muted)",
             fontWeight: "700",
           }}
         >
@@ -444,8 +445,8 @@ export const OwnerProfile = () => {
             padding: "11px 14px",
             cursor: "pointer",
             backgroundColor:
-              activeTab === "settings" ? "#ffffff" : "transparent",
-            color: activeTab === "settings" ? "#111827" : "#6b7280",
+              activeTab === "settings" ? "var(--color-card)" : "transparent",
+            color: activeTab === "settings" ? "var(--color-dark)" : "var(--color-muted)",
             fontWeight: "700",
           }}
         >
@@ -540,15 +541,15 @@ export const OwnerProfile = () => {
               style={{
                 padding: "16px",
                 borderRadius: "10px",
-                backgroundColor: "#f9fafb",
-                border: "1px solid #e5e7eb",
+                backgroundColor: "var(--color-card-subtle)",
+                border: "1px solid var(--color-border)",
               }}
             >
               <div
                 style={{
                   fontSize: "0.75rem",
                   fontWeight: "700",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                   marginBottom: "5px",
                 }}
               >
@@ -559,7 +560,7 @@ export const OwnerProfile = () => {
                 style={{
                   fontSize: "1rem",
                   fontWeight: "800",
-                  color: "#111827",
+                  color: "var(--color-dark)",
                 }}
               >
                 {salonData.name || "No salon assigned"}
@@ -568,7 +569,7 @@ export const OwnerProfile = () => {
               <div
                 style={{
                   fontSize: "0.84rem",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                   marginTop: "4px",
                 }}
               >
@@ -729,76 +730,7 @@ export const OwnerProfile = () => {
               gap: "18px",
             }}
           >
-            <div
-              style={{
-                padding: "16px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "10px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  color: "#111827",
-                }}
-              >
-                Theme Mode
-              </label>
 
-              <select
-                value={settings.theme}
-                onChange={(e) => handleSettingChange("theme", e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#ffffff",
-                }}
-              >
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="system">System</option>
-              </select>
-            </div>
-
-            <div
-              style={{
-                padding: "16px",
-                border: "1px solid #e5e7eb",
-                borderRadius: "10px",
-              }}
-            >
-              <label
-                style={{
-                  display: "block",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  color: "#111827",
-                }}
-              >
-                Language
-              </label>
-
-              <select
-                value={settings.language}
-                onChange={(e) =>
-                  handleSettingChange("language", e.target.value)
-                }
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#ffffff",
-                }}
-              >
-                <option value="English">English</option>
-                <option value="Amharic">Amharic</option>
-              </select>
-            </div>
 
             <div
               style={{
@@ -807,15 +739,16 @@ export const OwnerProfile = () => {
                 justifyContent: "space-between",
                 gap: "16px",
                 padding: "16px",
-                border: "1px solid #e5e7eb",
+                border: "1px solid var(--color-border)",
                 borderRadius: "10px",
+                backgroundColor: "var(--color-card-subtle)",
               }}
             >
               <div>
                 <div
                   style={{
                     fontWeight: "700",
-                    color: "#111827",
+                    color: "var(--color-dark)",
                   }}
                 >
                   Salon Notifications
@@ -824,7 +757,7 @@ export const OwnerProfile = () => {
                 <div
                   style={{
                     fontSize: "0.82rem",
-                    color: "#6b7280",
+                    color: "var(--color-muted)",
                     marginTop: "3px",
                   }}
                 >
@@ -858,6 +791,8 @@ export const OwnerProfile = () => {
               <FiCheckCircle />
               Settings saved automatically.
             </div>
+
+            <DateTimeSettingsCard />
           </div>
         </Card>
       )}

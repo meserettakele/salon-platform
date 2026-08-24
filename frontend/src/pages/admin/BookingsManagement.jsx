@@ -8,8 +8,10 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import { useDateTime } from "../../context/DateTimeContext";
 
 const BookingsManagement = ({ onMenuClick }) => {
+  const { formatDate, formatTime } = useDateTime();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -123,10 +125,13 @@ const BookingsManagement = ({ onMenuClick }) => {
 
   const getDateTime = (b) => {
     if (!b) return { date: "N/A", time: "" };
-    const date =
-      b.bookingDate || b.appointmentDate || b.date || b.booking_date || "N/A";
-    const time =
-      b.bookingTime || b.appointmentTime || b.time || b.booking_time || "";
+    const rawDate =
+      b.bookingDate || b.appointmentDate || b.date || b.booking_date;
+    const rawTime =
+      b.bookingTime || b.appointmentTime || b.time || b.booking_time;
+
+    const date = rawDate ? formatDate(rawDate) : "N/A";
+    const time = rawTime ? formatTime(rawTime) : "";
     return { date, time };
   };
 
@@ -245,13 +250,13 @@ const BookingsManagement = ({ onMenuClick }) => {
           style={{
             fontSize: "1.5rem",
             fontWeight: "700",
-            color: "#111827",
+            color: "var(--color-dark)",
             margin: 0,
           }}
         >
           📅 Platform Bookings Monitor
         </h1>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "4px" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: "4px" }}>
           Monitor and track all customer appointments across all registered
           platform salons.
         </p>
@@ -587,7 +592,7 @@ const StatCard = ({ label, count, color, bgColor }) => (
       style={{
         fontSize: "1.4rem",
         fontWeight: "700",
-        color: "#111827",
+        color: "var(--color-dark)",
         marginTop: "2px",
       }}
     >
@@ -599,16 +604,16 @@ const StatCard = ({ label, count, color, bgColor }) => (
 const DetailBox = ({ label, value }) => (
   <div
     style={{
-      backgroundColor: "#f9fafb",
+      backgroundColor: "var(--color-card-subtle)",
       padding: "10px",
       borderRadius: "8px",
-      border: "1px solid #f3f4f6",
+      border: "1px solid var(--color-border)",
     }}
   >
-    <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "2px" }}>
+    <div style={{ fontSize: "0.75rem", color: "var(--color-muted)", marginBottom: "2px" }}>
       {label}
     </div>
-    <div style={{ fontWeight: "600", color: "#111827" }}>{value}</div>
+    <div style={{ fontWeight: "600", color: "var(--color-dark)" }}>{value}</div>
   </div>
 );
 
@@ -623,7 +628,7 @@ const StatusBadge = ({ status }) => {
     CANCELED: { bg: "#fee2e2", color: "#dc2626" },
     REJECTED: { bg: "#f3f4f6", color: "#4b5563" },
   };
-  const current = config[st] || { bg: "#f3f4f6", color: "#374151" };
+  const current = config[st] || { bg: "var(--color-card-subtle)", color: "var(--color-muted)" };
 
   return (
     <span
@@ -657,7 +662,7 @@ const PaymentBadge = ({ status }) => {
     PARTIAL: { bg: "#f0fdf4", color: "#15803d" },
   };
 
-  const current = config[st] || { bg: "#f3f4f6", color: "#374151" };
+  const current = config[st] || { bg: "var(--color-card-subtle)", color: "var(--color-muted)" };
 
   return (
     <span
@@ -680,13 +685,13 @@ const PaymentBadge = ({ status }) => {
 // Styles
 const thStyle = {
   padding: "12px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "600",
   whiteSpace: "nowrap",
 };
 const tdStyle = {
   padding: "12px 16px",
-  color: "#111827",
+  color: "var(--color-dark)",
   verticalAlign: "middle",
 };
 
@@ -696,7 +701,7 @@ const modalBackdropStyle = {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.5)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -705,7 +710,9 @@ const modalBackdropStyle = {
 };
 
 const modalContentStyle = {
-  backgroundColor: "#fff",
+  backgroundColor: "var(--color-card)",
+  border: "1px solid var(--color-border)",
+  boxShadow: "var(--shadow-lg)",
   padding: "20px",
   borderRadius: "12px",
   maxHeight: "85vh",

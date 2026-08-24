@@ -1,6 +1,6 @@
 const customerService = require("../services/customerService");
 const createNotification = require("../utils/createNotification");
-const { Salon, Employee } = require("../models");
+const { Salon, Employee, Notification, Appointment, User, Service } = require("../models");
 
 // =========================================================================
 // ===================== OWNER ROLE CUSTOMER OPERATIONS ====================
@@ -209,50 +209,54 @@ exports.bookAppointment = async (req, res) => {
       req.body,
     );
 
-    // 🔔 TRIGGER NOTIFICATION: BOOKING SUBMITTED (To Customer)
-    await createNotification({
-      userId: req.user.id,
-      title: "Booking Submitted",
-      message: "Your booking request has been sent to the salon.",
-      type: "BOOKING_SUBMITTED",
-      bookingId: booking?.id || (Array.isArray(booking) ? booking[0]?.id : null),
-    });
-
-    // 🔔 TRIGGER NOTIFICATION TO SALON OWNER & ASSIGNED EMPLOYEES
+    // 🔔 Create In-App Database Notifications for Web Dashboard Bell
     try {
       const createdBookings = Array.isArray(booking) ? booking : [booking];
-      
+
+      // 1. Customer in-app bell notification
+      await Notification.create({
+        userId: req.user.id,
+        title: "Booking Submitted",
+        message: "Your booking request has been sent to the salon.",
+        type: "BOOKING_SUBMITTED",
+        bookingId: booking?.id || (Array.isArray(booking) ? booking[0]?.id : null),
+        isRead: false,
+      }).catch((e) => console.warn("Failed to create customer bell notification:", e.message));
+
+      // 2. Salon Owner & Specialist in-app bell notification
       for (const b of createdBookings) {
         if (!b) continue;
         const sId = b.salonId || req.body.salonId;
         if (sId) {
           const salon = await Salon.findByPk(sId);
           if (salon && salon.ownerId) {
-            await createNotification({
+            await Notification.create({
               userId: salon.ownerId,
               title: "New Booking Request",
               message: `New booking request #${b.id || ""} received for your salon.`,
               type: "BOOKING_CREATED",
               bookingId: b.id,
-            });
+              isRead: false,
+            }).catch((e) => console.warn("Failed to create owner bell notification:", e.message));
           }
         }
 
         if (b.employeeId) {
           const emp = await Employee.findByPk(b.employeeId);
           if (emp && emp.userId) {
-            await createNotification({
+            await Notification.create({
               userId: emp.userId,
               title: "New Appointment Assigned",
               message: `You have been assigned to appointment #${b.id || ""}.`,
               type: "BOOKING_ASSIGNED",
               bookingId: b.id,
-            });
+              isRead: false,
+            }).catch((e) => console.warn("Failed to create staff bell notification:", e.message));
           }
         }
       }
     } catch (notifErr) {
-      console.error("Failed to dispatch owner/employee notifications:", notifErr);
+      console.warn("Failed to dispatch in-app bell notifications:", notifErr.message);
     }
 
     return res.status(201).json({
@@ -295,14 +299,53 @@ exports.cancelBooking = async (req, res) => {
       req.params.id,
     );
 
-    // 🔔 TRIGGER NOTIFICATION: BOOKING CANCELLED BY CUSTOMER
+    const bookingId = booking?.id || req.params.id;
+
+    // 1. 🔔 NOTIFICATION TO CUSTOMER (in-app bell + Telegram)
     await createNotification({
       userId: req.user.id,
       title: "Booking Cancelled",
       message: "Your booking request has been cancelled.",
       type: "BOOKING_CANCELLED",
-      bookingId: req.params.id,
+      bookingId,
     });
+
+    // 2. 🔔 NOTIFICATION TO SALON OWNER & ASSIGNED SPECIALIST
+    try {
+      const { Salon, Employee, User, Service } = require("../models");
+      const customer = await User.findByPk(req.user.id);
+      const service = booking.serviceId ? await Service.findByPk(booking.serviceId) : null;
+      const salon = booking.salonId ? await Salon.findByPk(booking.salonId) : null;
+      const serviceName = service?.name || "Service";
+      const customerName = customer?.fullName || "A customer";
+
+      // Notify Salon Owner
+      if (salon && salon.ownerId) {
+        await createNotification({
+          userId: salon.ownerId,
+          title: "Booking Cancelled by Customer",
+          message: `${customerName} has cancelled their booking for ${serviceName} on ${booking.appointmentDate} at ${booking.appointmentTime}.`,
+          type: "BOOKING_CANCELLED_BY_CUSTOMER",
+          bookingId,
+        });
+      }
+
+      // Notify Assigned Specialist
+      if (booking.employeeId) {
+        const employee = await Employee.findByPk(booking.employeeId);
+        if (employee && employee.userId) {
+          await createNotification({
+            userId: employee.userId,
+            title: "Booking Cancelled by Customer",
+            message: `${customerName} has cancelled their booking for ${serviceName} on ${booking.appointmentDate} at ${booking.appointmentTime}.`,
+            type: "BOOKING_CANCELLED_BY_CUSTOMER",
+            bookingId,
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Failed to dispatch owner/employee cancellation alerts:", notifErr.message);
+    }
 
     return res
       .status(200)

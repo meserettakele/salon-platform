@@ -60,6 +60,7 @@ const Appointment = sequelize.define(
     acceptedAt: { type: DataTypes.DATE, allowNull: true },
     completedAt: { type: DataTypes.DATE, allowNull: true },
     cancelledAt: { type: DataTypes.DATE, allowNull: true },
+    rejectionReason: { type: DataTypes.STRING, allowNull: true },
   },
   {
     tableName: "appointments",

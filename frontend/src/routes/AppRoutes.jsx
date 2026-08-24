@@ -10,6 +10,9 @@ import ForgotPassword from "../pages/public/ForgotPassword";
 import Home from "../pages/public/Home";
 import Salons from "../pages/public/Salons";
 import SalonDetails from "../pages/public/SalonDetails";
+import ServicesPage from "../pages/public/Services";
+import AboutPage from "../pages/public/About";
+import ContactPage from "../pages/public/Contact";
 
 // Phase 2 Layout Components
 import { PublicLayout } from "../components/layout/PublicLayout";
@@ -60,6 +63,9 @@ export const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/salons" element={<Salons />} />
         <Route path="/salons/:id" element={<SalonDetails />} />
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
 
         {/* Authentication Gateway Nodes */}
         <Route path="/login" element={<Login />} />

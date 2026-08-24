@@ -1,13 +1,15 @@
-﻿// src/pages/shared/NotificationsPage.jsx
+// src/pages/shared/NotificationsPage.jsx
 // Shared notifications page used by Owner, Admin, Employee, and Customer roles.
 // The backend /api/v1/notifications endpoint is already role-aware -- it returns
 // only the notifications that belong to the currently logged-in user''s userId / recipientRole.
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useDateTime } from "../../context/DateTimeContext";
 import api from "../../services/api";
 
 const NotificationsPage = () => {
+  const { formatDate, formatTime, formatDateTime } = useDateTime();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -88,14 +90,14 @@ const NotificationsPage = () => {
     navigate(`/customer/payment?bookingId=${bookingId}`);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? "" : date.toLocaleString();
-  };
+  const [filter, setFilter] = useState("ALL");
 
   const getTypeIcon = (type) => {
     switch ((type || "").toUpperCase()) {
+      case "MESSAGE": case "CONTACT": case "INQUIRY": return "💬";
+      case "SALON_REGISTRATION": return "🏢";
+      case "SALON_STATUS": return "🏷️";
+      case "OWNER_REGISTERED": return "👤";
       case "BOOKING": case "APPOINTMENT": case "BOOKING_ACCEPTED": case "BOOKING_CONFIRMED": return "📅";
       case "BOOKING_CANCELLED": case "CANCELLED": return "❌";
       case "PAYMENT": case "PAYMENT_REQUIRED": return "💳";
@@ -107,25 +109,97 @@ const NotificationsPage = () => {
 
   const unreadCount = notifications.filter((n) => !n.isRead && !n.read).length;
 
+  const filteredList = notifications.filter((item) => {
+    if (filter === "MESSAGES") {
+      return (
+        item.type === "MESSAGE" ||
+        item.type === "CONTACT" ||
+        item.type === "INQUIRY" ||
+        item.title?.toLowerCase().includes("message") ||
+        item.title?.toLowerCase().includes("inquiry")
+      );
+    }
+    if (filter === "BOOKINGS") {
+      return (
+        item.type === "BOOKING" ||
+        item.type === "APPOINTMENT" ||
+        item.type === "BOOKING_ACCEPTED" ||
+        item.type === "BOOKING_CONFIRMED" ||
+        item.type === "CANCELLED" ||
+        item.type === "PAYMENT"
+      );
+    }
+    return true;
+  });
+
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px 16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+    <div style={{ maxWidth: "860px", margin: "0 auto", padding: "20px 16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 style={{ fontSize: "1.75rem", fontWeight: "700", color: "#111827", margin: 0 }}>
-            🔔 Notifications
+          <h1 style={{ fontSize: "1.75rem", fontWeight: "800", color: "var(--color-dark)", margin: 0 }}>
+            🔔 Notifications & Messages
           </h1>
-          <p style={{ fontSize: "0.875rem", color: "#6b7280", margin: "4px 0 0 0" }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--color-muted)", margin: "4px 0 0 0" }}>
             {roleSubtitle[currentRole] || "Stay updated with your latest activity."}
           </p>
         </div>
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllRead}
-            style={{ padding: "6px 12px", fontSize: "0.8rem", fontWeight: "600", color: "#db2777", border: "1px solid #fbcfe8", borderRadius: "8px", backgroundColor: "#fdf2f8", cursor: "pointer" }}
+            style={{ padding: "8px 14px", fontSize: "0.82rem", fontWeight: "700", color: "var(--color-primary)", border: "1px solid rgba(216,69,112,0.3)", borderRadius: "8px", backgroundColor: "var(--color-primary-light)", cursor: "pointer" }}
           >
-            Mark all as read
+            Mark all as read ({unreadCount})
           </button>
         )}
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+        <button
+          onClick={() => setFilter("ALL")}
+          style={{
+            padding: "6px 14px",
+            fontSize: "0.82rem",
+            fontWeight: "700",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: filter === "ALL" ? "var(--color-primary)" : "var(--color-card-subtle)",
+            color: filter === "ALL" ? "#FFFFFF" : "var(--color-muted)",
+          }}
+        >
+          All Notifications ({notifications.length})
+        </button>
+        <button
+          onClick={() => setFilter("MESSAGES")}
+          style={{
+            padding: "6px 14px",
+            fontSize: "0.82rem",
+            fontWeight: "700",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: filter === "MESSAGES" ? "var(--color-primary)" : "var(--color-card-subtle)",
+            color: filter === "MESSAGES" ? "#FFFFFF" : "var(--color-muted)",
+          }}
+        >
+          💬 Messages
+        </button>
+        <button
+          onClick={() => setFilter("BOOKINGS")}
+          style={{
+            padding: "6px 14px",
+            fontSize: "0.82rem",
+            fontWeight: "700",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            backgroundColor: filter === "BOOKINGS" ? "var(--color-primary)" : "var(--color-card-subtle)",
+            color: filter === "BOOKINGS" ? "#FFFFFF" : "var(--color-muted)",
+          }}
+        >
+          📅 Bookings
+        </button>
       </div>
 
       {error && (
@@ -136,17 +210,17 @@ const NotificationsPage = () => {
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280" }}>Loading notifications...</div>
-      ) : notifications.length === 0 ? (
+      ) : filteredList.length === 0 ? (
         <div style={{ backgroundColor: "#ffffff", padding: "40px 20px", borderRadius: "12px", border: "1px solid #e5e7eb", textAlign: "center", color: "#6b7280" }}>
-          <span style={{ fontSize: "2rem", display: "block", marginBottom: "8px" }}>🔔</span>
-          <p style={{ fontSize: "1rem", fontWeight: "600", color: "#374151", margin: 0 }}>No notifications yet</p>
+          <span style={{ fontSize: "2rem", display: "block", marginBottom: "8px" }}>📭</span>
+          <p style={{ fontSize: "1rem", fontWeight: "600", color: "#374151", margin: 0 }}>No notifications in this view</p>
           <p style={{ fontSize: "0.85rem", color: "#9ca3af", margin: "4px 0 0 0" }}>
             You will see updates here when there is new activity for your account.
           </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {notifications.map((item, index) => {
+          {filteredList.map((item, index) => {
             const notifId = item.id || item._id;
             const isUnread = !item.isRead && !item.read;
             const appt = item.appointment || item.booking || {};
@@ -157,6 +231,7 @@ const NotificationsPage = () => {
             const apptDate = appt.appointmentDate || item.appointmentDate || "";
             const apptTime = appt.appointmentTime || item.appointmentTime || "";
             const targetBookingId = item.bookingId || appt.bookingId || appt.id;
+            const isMessage = item.type === "MESSAGE" || item.type === "CONTACT" || item.type === "INQUIRY";
             const hasDetails = Boolean(salonName || serviceName || specialistName || customerName || apptDate);
             const showCustomerActions = isCustomer && (
               item.type?.toUpperCase() === "BOOKING_ACCEPTED" ||
@@ -169,38 +244,76 @@ const NotificationsPage = () => {
                 key={notifId || index}
                 onClick={() => handleMarkAsRead(notifId, isUnread)}
                 style={{
-                  backgroundColor: isUnread ? "#fff5f8" : "#ffffff",
-                  border: isUnread ? "1px solid #fbcfe8" : "1px solid #e5e7eb",
-                  borderRadius: "12px", padding: "16px",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                  backgroundColor: isUnread ? "var(--color-primary-light)" : "var(--color-card)",
+                  border: isUnread ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
+                  borderRadius: "14px", padding: "18px 20px",
+                  boxShadow: "var(--shadow-sm)",
                   position: "relative", transition: "all 0.2s ease",
                   cursor: isUnread ? "pointer" : "default",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     {isUnread && (
-                      <span style={{ height: "8px", width: "8px", backgroundColor: "#db2777", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
+                      <span style={{ height: "8px", width: "8px", backgroundColor: "var(--color-primary)", borderRadius: "50%", display: "inline-block", flexShrink: 0 }} />
                     )}
-                    <span style={{ fontSize: "1.1rem" }}>{getTypeIcon(item.type)}</span>
-                    <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#111827", margin: 0 }}>
+                    <span style={{ fontSize: "1.3rem" }}>{getTypeIcon(item.type)}</span>
+                    <h3 style={{ fontSize: "1.02rem", fontWeight: "800", color: "var(--color-dark)", margin: 0 }}>
                       {item.title || "Notification"}
+                      <span style={{ fontSize: "0.78rem", color: "var(--color-muted)", whiteSpace: "nowrap", marginLeft: "8px" }}>
+                        {formatDateTime(item.createdAt || item.date)}
+                      </span>
                     </h3>
                   </div>
-                  <span style={{ fontSize: "0.75rem", color: "#9ca3af", whiteSpace: "nowrap", marginLeft: "8px" }}>
-                    {formatDate(item.createdAt || item.date)}
-                  </span>
                 </div>
 
-                <p style={{ fontSize: "0.875rem", color: "#4b5563", margin: "0 0 10px 0" }}>{item.message}</p>
+                <div
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--color-dark)",
+                    lineHeight: "1.55",
+                    margin: "0 0 12px 0",
+                    whiteSpace: "pre-wrap",
+                    backgroundColor: isMessage ? "var(--color-card-subtle)" : "transparent",
+                    padding: isMessage ? "12px 14px" : "0",
+                    borderRadius: isMessage ? "10px" : "0",
+                    border: isMessage ? "1px solid var(--color-border)" : "none",
+                  }}
+                >
+                  {item.message}
+                </div>
+
+                {isMessage && (
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard?.writeText(item.message);
+                        alert("Message details copied to clipboard!");
+                      }}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: "0.75rem",
+                        fontWeight: "600",
+                        color: "var(--color-dark)",
+                        backgroundColor: "var(--color-card-subtle)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      📋 Copy Details
+                    </button>
+                  </div>
+                )}
 
                 {hasDetails && (
-                  <div style={{ backgroundColor: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.05)", borderRadius: "8px", padding: "10px 12px", marginBottom: "12px", fontSize: "0.8rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
-                    {salonName && <div><span style={{ color: "#9ca3af", display: "block" }}>Salon</span><strong>{salonName}</strong></div>}
-                    {serviceName && <div><span style={{ color: "#9ca3af", display: "block" }}>Service</span><strong>{serviceName}</strong></div>}
-                    {customerName && !isCustomer && <div><span style={{ color: "#9ca3af", display: "block" }}>Customer</span><strong>{customerName}</strong></div>}
-                    {specialistName && isCustomer && <div><span style={{ color: "#9ca3af", display: "block" }}>Specialist</span><strong>{specialistName}</strong></div>}
-                    {apptDate && <div><span style={{ color: "#9ca3af", display: "block" }}>Date & Time</span><strong>{apptDate}{apptTime ? ` @ ${apptTime}` : ""}</strong></div>}
+                  <div style={{ backgroundColor: "var(--color-card-subtle)", border: "1px solid var(--color-border)", borderRadius: "8px", padding: "10px 12px", marginBottom: "12px", fontSize: "0.8rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px", color: "var(--color-dark)" }}>
+                    {salonName && <div><span style={{ color: "var(--color-muted)", display: "block" }}>Salon</span><strong>{salonName}</strong></div>}
+                    {serviceName && <div><span style={{ color: "var(--color-muted)", display: "block" }}>Service</span><strong>{serviceName}</strong></div>}
+                    {customerName && !isCustomer && <div><span style={{ color: "var(--color-muted)", display: "block" }}>Customer</span><strong>{customerName}</strong></div>}
+                    {specialistName && isCustomer && <div><span style={{ color: "var(--color-muted)", display: "block" }}>Specialist</span><strong>{specialistName}</strong></div>}
+                    {apptDate && <div><span style={{ color: "var(--color-muted)", display: "block" }}>Date & Time</span><strong>{formatDate(apptDate)}{apptTime ? ` @ ${formatTime(apptTime)}` : ""}</strong></div>}
                   </div>
                 )}
 
@@ -211,17 +324,17 @@ const NotificationsPage = () => {
                 )}
 
                 {showCustomerActions && (
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "8px", borderTop: "1px solid #f3f4f6" }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "8px", borderTop: "1px solid var(--color-border)" }}>
                     <button
                       onClick={(e) => handleCancelBooking(e, targetBookingId, notifId)}
                       disabled={actionLoadingId === notifId}
-                      style={{ padding: "6px 12px", fontSize: "0.75rem", fontWeight: "600", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: "6px", backgroundColor: "#ffffff", cursor: "pointer" }}
+                      style={{ padding: "6px 12px", fontSize: "0.75rem", fontWeight: "600", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: "6px", backgroundColor: "var(--color-card)", cursor: "pointer" }}
                     >
                       {actionLoadingId === notifId ? "Cancelling..." : "Cancel Booking"}
                     </button>
                     <button
                       onClick={(e) => handlePayNow(e, targetBookingId)}
-                      style={{ padding: "6px 12px", fontSize: "0.75rem", fontWeight: "600", color: "#ffffff", border: "none", borderRadius: "6px", backgroundColor: "#db2777", cursor: "pointer" }}
+                      style={{ padding: "6px 12px", fontSize: "0.75rem", fontWeight: "600", color: "#ffffff", border: "none", borderRadius: "6px", backgroundColor: "var(--color-primary)", cursor: "pointer" }}
                     >
                       Pay Now
                     </button>

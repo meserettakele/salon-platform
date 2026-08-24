@@ -261,14 +261,14 @@ export const MySalon = () => {
           style={{
             fontSize: "1.75rem",
             fontWeight: "800",
-            color: "#111827",
+            color: "var(--color-dark)",
             margin: 0,
             fontFamily: "Manrope, sans-serif",
           }}
         >
           My Salon Profile
         </h1>
-        <p style={{ fontSize: "0.88rem", color: "#6b7280", marginTop: "4px" }}>
+        <p style={{ fontSize: "0.88rem", color: "var(--color-muted)", marginTop: "4px" }}>
           Manage your salon brand identity, basic contact details, logo,
           categories, and photo gallery.
         </p>
@@ -300,7 +300,7 @@ export const MySalon = () => {
           style={{
             fontSize: "1rem",
             fontWeight: "700",
-            color: "#111827",
+            color: "var(--color-dark)",
             margin: "0 0 16px 0",
           }}
         >
@@ -499,7 +499,7 @@ export const MySalon = () => {
             style={{
               fontSize: "1rem",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: "0 0 8px 0",
             }}
           >
@@ -518,93 +518,99 @@ export const MySalon = () => {
               required
               value={salon.name}
               onChange={(e) => setSalon({ ...salon, name: e.target.value })}
+              placeholder="e.g. Elegance Beauty Bar"
+            />
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              value={salon.email}
+              onChange={(e) => setSalon({ ...salon, email: e.target.value })}
+              placeholder="salon@example.com"
             />
             <Input
               label="Phone Number"
               required
               value={salon.phone}
               onChange={(e) => setSalon({ ...salon, phone: e.target.value })}
-            />
-            <Input
-              label="Email Address"
-              type="email"
-              value={salon.email}
-              onChange={(e) => setSalon({ ...salon, email: e.target.value })}
+              placeholder="+251 91 234 5678"
             />
             <Input
               label="City"
               required
               value={salon.city}
               onChange={(e) => setSalon({ ...salon, city: e.target.value })}
+              placeholder="e.g. Addis Ababa"
             />
           </div>
 
-          <div>
-            <label
-              style={{
-                fontSize: "0.85rem",
-                fontWeight: "600",
-                color: "#374151",
-                marginBottom: "4px",
-                display: "block",
-              }}
-            >
-              Full Address
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Building, street, neighborhood..."
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "16px",
+            }}
+          >
+            <Input
+              label="Street Address"
+              required
               value={salon.address}
               onChange={(e) => setSalon({ ...salon, address: e.target.value })}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: "10px",
-                border: "1px solid #e5e7eb",
-                fontFamily: "sans-serif",
-              }}
+              placeholder="e.g. Bole Road, Near Medhanialem"
+            />
+            <Input
+              label="Sub-city / District (Optional)"
+              value={salon.subCity || ""}
+              onChange={(e) => setSalon({ ...salon, subCity: e.target.value })}
+              placeholder="e.g. Bole Sub-city"
             />
           </div>
 
           <div>
             <label
               style={{
-                fontSize: "0.85rem",
+                fontSize: "0.82rem",
                 fontWeight: "600",
-                color: "#374151",
-                marginBottom: "4px",
+                color: "var(--color-dark)",
                 display: "block",
+                marginBottom: "6px",
               }}
             >
-              Description & Specializations
+              Salon Bio / Description
             </label>
             <textarea
               rows={4}
-              placeholder="Tell customers about your salon services and luxury experience..."
               value={salon.description}
               onChange={(e) =>
                 setSalon({ ...salon, description: e.target.value })
               }
+              placeholder="Share what makes your salon unique, your specialties, ambience..."
               style={{
                 width: "100%",
-                padding: "10px 14px",
-                borderRadius: "10px",
-                border: "1px solid #e5e7eb",
-                fontFamily: "sans-serif",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                border: "1px solid var(--color-border)",
+                backgroundColor: "var(--color-card)",
+                color: "var(--color-dark)",
+                fontFamily: "inherit",
+                fontSize: "0.9rem",
+                outline: "none",
+                boxSizing: "border-box",
+                resize: "vertical",
               }}
             />
           </div>
 
-          {/* Clickable Categories Selection */}
+          {/* CATEGORIES SELECTION */}
           {categoriesList.length > 0 && (
             <div>
               <label
                 style={{
-                  fontSize: "0.85rem",
+                  fontSize: "0.82rem",
                   fontWeight: "600",
-                  color: "#374151",
-                  marginBottom: "6px",
+                  color: "var(--color-dark)",
                   display: "block",
+                  marginBottom: "8px",
                 }}
               >
                 Select Salon Categories (Click to toggle)
@@ -622,10 +628,10 @@ export const MySalon = () => {
                         padding: "6px 14px",
                         borderRadius: "20px",
                         border: isSelected
-                          ? "1px solid #e91e63"
-                          : "1px solid #e5e7eb",
-                        backgroundColor: isSelected ? "#e91e63" : "#f3f4f6",
-                        color: isSelected ? "#ffffff" : "#374151",
+                          ? "1px solid var(--color-primary)"
+                          : "1px solid var(--color-border)",
+                        backgroundColor: isSelected ? "var(--color-primary)" : "var(--color-card-subtle)",
+                        color: isSelected ? "#ffffff" : "var(--color-dark)",
                         fontWeight: "600",
                         cursor: "pointer",
                         transition: "all 0.2s ease",

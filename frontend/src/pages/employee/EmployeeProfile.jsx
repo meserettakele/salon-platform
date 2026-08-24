@@ -16,6 +16,7 @@ import {
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
 import api from "../../services/api";
 
 export const EmployeeProfile = () => {
@@ -163,7 +164,7 @@ export const EmployeeProfile = () => {
             margin: 0,
             fontSize: "1.8rem",
             fontWeight: "800",
-            color: "#111827",
+            color: "var(--color-dark)",
           }}
         >
           My Profile
@@ -172,7 +173,7 @@ export const EmployeeProfile = () => {
         <p
           style={{
             margin: "6px 0 0",
-            color: "#6b7280",
+            color: "var(--color-muted)",
             fontSize: "0.9rem",
           }}
         >
@@ -203,7 +204,7 @@ export const EmployeeProfile = () => {
               width: "82px",
               height: "82px",
               borderRadius: "50%",
-              backgroundColor: "#e91e63",
+              backgroundColor: "var(--color-primary)",
               color: "#ffffff",
               display: "flex",
               alignItems: "center",
@@ -241,7 +242,7 @@ export const EmployeeProfile = () => {
                 margin: 0,
                 fontSize: "1.25rem",
                 fontWeight: "800",
-                color: "#111827",
+                color: "var(--color-dark)",
               }}
             >
               {profile?.name || "Employee"}
@@ -250,7 +251,7 @@ export const EmployeeProfile = () => {
             <p
               style={{
                 margin: "5px 0",
-                color: "#6b7280",
+                color: "var(--color-muted)",
                 fontSize: "0.9rem",
               }}
             >
@@ -293,7 +294,7 @@ export const EmployeeProfile = () => {
               margin: "0 0 20px",
               fontSize: "1.05rem",
               fontWeight: "800",
-              color: "#111827",
+              color: "var(--color-dark)",
             }}
           >
             Personal Information
@@ -428,7 +429,7 @@ export const EmployeeProfile = () => {
             <div
               style={{
                 fontSize: "0.75rem",
-                color: "#6b7280",
+                color: "var(--color-muted)",
                 fontWeight: "600",
                 marginBottom: "5px",
               }}
@@ -439,7 +440,7 @@ export const EmployeeProfile = () => {
             <div
               style={{
                 fontSize: "0.95rem",
-                color: "#111827",
+                color: "var(--color-dark)",
                 fontWeight: "700",
               }}
             >
@@ -451,7 +452,7 @@ export const EmployeeProfile = () => {
                 style={{
                   marginTop: "3px",
                   fontSize: "0.8rem",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                 }}
               >
                 {profile.salon.address}
@@ -461,24 +462,26 @@ export const EmployeeProfile = () => {
 
           {/* SAVE BUTTON */}
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: "24px",
-            }}
-          >
-            <Button type="submit" disabled={saving}>
-              <FiSave />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "24px",
+              }}
+            >
+              <Button type="submit" disabled={saving}>
+                <FiSave />
 
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
-  );
-};
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+
+        <DateTimeSettingsCard />
+      </div>
+    );
+  };
 
 // =====================================================
 // STYLES
@@ -490,7 +493,7 @@ const labelStyle = {
   gap: "6px",
   fontSize: "0.8rem",
   fontWeight: "700",
-  color: "#374151",
+  color: "var(--color-dark)",
   marginBottom: "7px",
 };
 
@@ -499,9 +502,9 @@ const inputStyle = {
   boxSizing: "border-box",
   padding: "11px 13px",
   borderRadius: "10px",
-  border: "1px solid #e5e7eb",
-  backgroundColor: "#ffffff",
-  color: "#111827",
+  border: "1px solid var(--color-border)",
+  backgroundColor: "var(--color-card)",
+  color: "var(--color-dark)",
   fontSize: "0.9rem",
   outline: "none",
 };
@@ -512,8 +515,8 @@ const badgeStyle = {
   gap: "4px",
   padding: "4px 10px",
   borderRadius: "12px",
-  backgroundColor: "#fce7f3",
-  color: "#e91e63",
+  backgroundColor: "var(--color-primary-light)",
+  color: "var(--color-primary)",
   fontSize: "0.72rem",
   fontWeight: "700",
 };

@@ -314,7 +314,7 @@ export const Employees = () => {
             style={{
               fontSize: "1.75rem",
               fontWeight: "800",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: 0,
               fontFamily: "Manrope, sans-serif",
             }}
@@ -322,7 +322,7 @@ export const Employees = () => {
             Employees Roster
           </h1>
           <p
-            style={{ fontSize: "0.88rem", color: "#6b7280", marginTop: "4px" }}
+            style={{ fontSize: "0.88rem", color: "var(--color-muted)", marginTop: "4px" }}
           >
             Manage staff details, experience, specialization, and assigned
             services.
@@ -1337,7 +1337,7 @@ export const Employees = () => {
 
 const thStyle = {
   padding: "12px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "700",
   fontSize: "0.78rem",
   textTransform: "uppercase",
@@ -1345,16 +1345,16 @@ const thStyle = {
 
 const tdStyle = {
   padding: "14px 16px",
-  color: "#111827",
+  color: "var(--color-dark)",
 };
 
 const actionBtnStyle = {
   padding: "6px",
-  backgroundColor: "#f3f4f6",
-  border: "none",
+  backgroundColor: "var(--color-card-subtle)",
+  border: "1px solid var(--color-border)",
   borderRadius: "6px",
   cursor: "pointer",
-  color: "#374151",
+  color: "var(--color-dark)",
   fontSize: "0.9rem",
 };
 
@@ -1364,7 +1364,7 @@ const modalOverlay = {
   left: 0,
   width: "100vw",
   height: "100vh",
-  backgroundColor: "rgba(0,0,0,0.4)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1373,14 +1373,15 @@ const modalOverlay = {
 };
 
 const modalContent = {
-  backgroundColor: "#ffffff",
+  backgroundColor: "var(--color-card)",
   borderRadius: "16px",
   padding: "24px",
   maxWidth: "520px",
   width: "100%",
   maxHeight: "85vh",
   overflowY: "auto",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+  boxShadow: "var(--shadow-lg)",
+  border: "1px solid var(--color-border)",
 };
 
 export default Employees;

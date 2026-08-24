@@ -494,14 +494,14 @@ const AdminDashboard = () => {
 // Styling Constants
 const statLabelStyle = {
   fontSize: "0.8rem",
-  color: "#6b7280",
+  color: "var(--color-muted)",
   display: "block",
 };
 
 const statNumberStyle = {
   fontSize: "1.5rem",
   fontWeight: "700",
-  color: "#111827",
+  color: "var(--color-dark)",
   marginTop: "4px",
   display: "block",
 };
@@ -511,7 +511,7 @@ const tableHeaderStyle = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  borderBottom: "1px solid #e5e7eb",
+  borderBottom: "1px solid var(--color-border)",
 };
 
 const tableStyle = {
@@ -522,25 +522,25 @@ const tableStyle = {
 };
 
 const thGroupStyle = {
-  backgroundColor: "#f9fafb",
-  borderBottom: "1px solid #e5e7eb",
+  backgroundColor: "var(--color-card-subtle)",
+  borderBottom: "1px solid var(--color-border)",
 };
 
 const thStyle = {
   padding: "10px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "600",
 };
 
 const tdStyle = {
   padding: "12px 16px",
-  color: "#111827",
+  color: "var(--color-dark)",
 };
 
 const emptyStateStyle = {
   padding: "24px",
   textAlign: "center",
-  color: "#9ca3af",
+  color: "var(--color-muted-light)",
   margin: 0,
 };
 

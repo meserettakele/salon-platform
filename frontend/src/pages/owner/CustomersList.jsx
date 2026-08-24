@@ -173,8 +173,8 @@ export const CustomersList = () => {
                   width: "60px",
                   height: "60px",
                   borderRadius: "50%",
-                  backgroundColor: "#eff6ff",
-                  color: "#2563eb",
+                  backgroundColor: "var(--color-primary-light)",
+                  color: "var(--color-primary)",
                   fontSize: "1.5rem",
                   fontWeight: "700",
                   display: "inline-flex",
@@ -184,13 +184,13 @@ export const CustomersList = () => {
               >
                 {(selectedCustomer.fullName || selectedCustomer.name || "C").charAt(0).toUpperCase()}
               </div>
-              <h4 style={{ margin: "10px 0 2px 0", fontSize: "1.1rem", fontWeight: "700" }}>
+              <h4 style={{ margin: "10px 0 2px 0", fontSize: "1.1rem", fontWeight: "700", color: "var(--color-dark)" }}>
                 {selectedCustomer.fullName || selectedCustomer.name}
               </h4>
-              <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>Valued Customer</span>
+              <span style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>Valued Customer</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.88rem", color: "#374151" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.88rem", color: "var(--color-dark)" }}>
               <div><strong>Phone Number:</strong> {selectedCustomer.phone || "N/A"}</div>
               <div><strong>Email Address:</strong> {selectedCustomer.email || "N/A"}</div>
               <div><strong>Total Appointments:</strong> {selectedCustomer.totalBookings ?? 1}</div>
@@ -211,7 +211,7 @@ export const CustomersList = () => {
 
 const thStyle = {
   padding: "12px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "700",
   fontSize: "0.78rem",
   textTransform: "uppercase",
@@ -219,7 +219,7 @@ const thStyle = {
 
 const tdStyle = {
   padding: "14px 16px",
-  color: "#111827",
+  color: "var(--color-dark)",
 };
 
 const modalOverlay = {
@@ -228,7 +228,7 @@ const modalOverlay = {
   left: 0,
   width: "100vw",
   height: "100vh",
-  backgroundColor: "rgba(0,0,0,0.4)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -237,12 +237,13 @@ const modalOverlay = {
 };
 
 const modalContent = {
-  backgroundColor: "#ffffff",
+  backgroundColor: "var(--color-card)",
   borderRadius: "16px",
   padding: "24px",
   maxWidth: "440px",
   width: "100%",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+  boxShadow: "var(--shadow-lg)",
+  border: "1px solid var(--color-border)",
 };
 
 export default CustomersList;

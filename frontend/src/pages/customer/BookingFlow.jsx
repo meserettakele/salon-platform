@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import AdaptiveDatePicker from "../../components/common/AdaptiveDatePicker";
+import { useDateTime } from "../../context/DateTimeContext";
 import bookingService from "../../services/bookingService.js";
 
 export const BookingFlow = () => {
   const navigate = useNavigate();
+  const { formatDate, formatTime } = useDateTime();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -36,9 +39,24 @@ export const BookingFlow = () => {
   const [selectedTime, setSelectedTime] = useState("");
   const [notes, setNotes] = useState("");
 
+  const closedDays = useMemo(() => {
+    if (!selectedSalon?.businessHours || !Array.isArray(selectedSalon.businessHours)) {
+      return [];
+    }
+    return selectedSalon.businessHours
+      .filter((bh) => bh.isClosed === true || bh.isClosed === 1 || bh.isOpen === false)
+      .map((bh) => bh.day || bh.dayOfWeek);
+  }, [selectedSalon]);
+
   // ==================== HELPERS ====================
 
   const extractData = (res) => res?.data?.data || res?.data || [];
+
+  const formatImageUrl = (img) => {
+    if (!img) return null;
+    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) return img;
+    return `http://localhost:5000/${img.replace(/^\/+/, "")}`;
+  };
 
   const getServiceId = (service) => Number(service.id);
 
@@ -809,7 +827,7 @@ export const BookingFlow = () => {
                       <div
                         style={{
                           display: "flex",
-                          alignItems: "flex-start",
+                          alignItems: "center",
                           gap: "12px",
                         }}
                       >
@@ -819,16 +837,53 @@ export const BookingFlow = () => {
                           onChange={() => toggleService(service)}
                           onClick={(e) => e.stopPropagation()}
                           style={{
-                            marginTop: "4px",
                             width: "18px",
                             height: "18px",
                             accentColor: "var(--color-primary)",
+                            cursor: "pointer",
+                            flexShrink: 0,
                           }}
                         />
+
+                        {/* Service Thumbnail */}
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "10px",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                            backgroundColor: "var(--color-primary-light)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "1px solid var(--color-border)",
+                          }}
+                        >
+                          {service.image ? (
+                            <img
+                              src={formatImageUrl(service.image)}
+                              alt={service.name}
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                if (e.target.nextSibling) e.target.nextSibling.style.display = "flex";
+                              }}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : null}
+                          <span style={{ display: service.image ? "none" : "flex", fontSize: "1.3rem" }}>
+                            💇‍♀️
+                          </span>
+                        </div>
 
                         <div
                           style={{
                             flex: 1,
+                            minWidth: 0,
                           }}
                         >
                           <div
@@ -1119,7 +1174,7 @@ export const BookingFlow = () => {
         )}
 
         {/* =========================================================
-            STEP 4: DATE
+            STEP 4: DATE (Adaptive Ethiopian & Gregorian Calendar)
         ========================================================= */}
 
         {step === 4 && (
@@ -1130,34 +1185,27 @@ export const BookingFlow = () => {
                 color: "var(--color-primary)",
               }}
             >
-              Step 4: Choose Date
+              Step 4: Choose Appointment Date
             </h3>
 
             <p
               style={{
                 color: "var(--color-muted)",
-                marginBottom: "16px",
+                marginBottom: "20px",
               }}
             >
               Select the date you want to visit{" "}
-              <strong>{selectedSalon?.name}</strong>.
+              <strong>{selectedSalon?.name}</strong>. You can view in Ethiopian or Gregorian calendar.
             </p>
 
-            <input
-              type="date"
+            <AdaptiveDatePicker
               value={selectedDate}
-              min={new Date().toLocaleDateString("en-CA")}
-              onChange={(e) => {
-                setSelectedDate(e.target.value);
+              minDate={new Date().toLocaleDateString("en-CA")}
+              closedDays={closedDays}
+              onChange={(newDate) => {
+                setSelectedDate(newDate);
                 setSelectedTime("");
                 setTimeSlots([]);
-              }}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "1px solid var(--color-border, #ccc)",
-                fontSize: "1rem",
               }}
             />
           </div>
@@ -1216,13 +1264,40 @@ export const BookingFlow = () => {
             {loading ? (
               <Loader />
             ) : timeSlots.length === 0 ? (
-              <p
+              <div
                 style={{
-                  color: "var(--color-muted)",
+                  padding: "24px 20px",
+                  borderRadius: "12px",
+                  backgroundColor: "#FFF5F8",
+                  border: "1px solid #FBCFE8",
+                  textAlign: "center",
+                  marginBottom: "28px",
                 }}
               >
-                No available time slots found for this date.
-              </p>
+                <div style={{ fontSize: "2rem", marginBottom: "8px" }}>📅</div>
+                <h4 style={{ margin: "0 0 6px", color: "#111827", fontWeight: "800", fontSize: "1.05rem" }}>
+                  No Available Time Slots Found For This Date
+                </h4>
+                <p style={{ margin: "0 auto 16px", fontSize: "0.88rem", color: "#6B7280", maxWidth: "480px", lineHeight: "1.5" }}>
+                  <strong>{selectedSalon?.name}</strong> may be closed on this day of the week, or all appointment slots have already been booked.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--color-primary)",
+                    backgroundColor: "#FFFFFF",
+                    color: "var(--color-primary)",
+                    fontWeight: "700",
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  ← Choose Another Date
+                </button>
+              </div>
             ) : (
               <div
                 style={{
@@ -1242,22 +1317,21 @@ export const BookingFlow = () => {
                       onClick={() => setSelectedTime(slot)}
                       style={{
                         padding: "12px",
-                        borderRadius: "8px",
-                        fontWeight: "600",
+                        borderRadius: "10px",
+                        fontWeight: "700",
                         cursor: "pointer",
-
                         border: isSelected
                           ? "2px solid var(--color-primary)"
-                          : "1px solid var(--color-border, #ccc)",
-
+                          : "1px solid var(--color-border)",
                         backgroundColor: isSelected
                           ? "var(--color-primary)"
-                          : "transparent",
-
-                        color: isSelected ? "#fff" : "var(--color-dark)",
+                          : "var(--color-card)",
+                        color: isSelected ? "#ffffff" : "var(--color-dark)",
+                        boxShadow: isSelected ? "0 4px 12px rgba(216, 69, 112, 0.3)" : "none",
+                        transition: "all 0.15s ease",
                       }}
                     >
-                      {slot}
+                      {formatTime(slot)}
                     </button>
                   );
                 })}
@@ -1319,7 +1393,7 @@ export const BookingFlow = () => {
                             color: "var(--color-primary)",
                           }}
                         >
-                          {item.startTime}
+                          {formatTime(item.startTime)}
                         </strong>
 
                         <div
@@ -1376,7 +1450,7 @@ export const BookingFlow = () => {
                   marginBottom: "16px",
                 }}
               >
-                <strong>Date:</strong> {selectedDate}
+                <strong>Date:</strong> {formatDate(selectedDate)}
               </div>
 
               <hr
@@ -1449,7 +1523,7 @@ export const BookingFlow = () => {
                           color: "var(--color-muted)",
                         }}
                       >
-                        Time: <strong>{item.startTime}</strong> ·{" "}
+                        Time: <strong>{formatTime(item.startTime)}</strong> ·{" "}
                         {item.duration} mins
                       </div>
                     </div>

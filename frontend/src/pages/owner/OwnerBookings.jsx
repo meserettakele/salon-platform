@@ -16,14 +16,19 @@ import {
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import { useDateTime } from "../../context/DateTimeContext";
 import api from "../../services/api";
 
 export const OwnerBookings = () => {
+  const { formatDate, formatTime } = useDateTime();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [rejectModalBooking, setRejectModalBooking] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [submittingReject, setSubmittingReject] = useState(false);
 
   useEffect(() => {
     fetchBookings();
@@ -51,6 +56,24 @@ export const OwnerBookings = () => {
       fetchBookings();
     } catch (err) {
       alert(err?.response?.data?.message || `Failed to ${action} booking`);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectModalBooking) return;
+    try {
+      setSubmittingReject(true);
+      const reason = rejectionReason.trim() || "Declined by salon";
+      await api.patch(`/owner/bookings/${rejectModalBooking.id}/reject`, {
+        reason,
+      });
+      setRejectModalBooking(null);
+      setRejectionReason("");
+      fetchBookings();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to reject booking");
+    } finally {
+      setSubmittingReject(false);
     }
   };
 
@@ -140,14 +163,14 @@ export const OwnerBookings = () => {
           style={{
             fontSize: "1.75rem",
             fontWeight: "800",
-            color: "#111827",
+            color: "var(--color-dark)",
             margin: 0,
             fontFamily: "Manrope, sans-serif",
           }}
         >
           Bookings Management
         </h1>
-        <p style={{ fontSize: "0.88rem", color: "#6b7280", marginTop: "4px" }}>
+        <p style={{ fontSize: "0.88rem", color: "var(--color-muted)", marginTop: "4px" }}>
           Main appointment working console. Review requests, monitor payments,
           and fulfill services.
         </p>
@@ -337,11 +360,14 @@ export const OwnerBookings = () => {
                   const serviceName =
                     b.service?.name || b.serviceName || "Service";
                   const employeeName =
-                    b.employee?.name || b.employeeName || "Unassigned";
-                  const dateStr = b.appointmentDate
-                    ? b.appointmentDate.split("T")[0]
-                    : b.date || "Today";
-                  const timeStr = b.appointmentTime || b.time || "TBD";
+                    b.employee?.fullName ||
+                    b.employee?.name ||
+                    b.employeeName ||
+                    "Unassigned";
+                  const rawDate = b.appointmentDate || b.date;
+                  const rawTime = b.appointmentTime || b.time;
+                  const dateStr = rawDate ? formatDate(rawDate) : "Today";
+                  const timeStr = rawTime ? formatTime(rawTime) : "TBD";
 
                   return (
                     <tr
@@ -411,9 +437,10 @@ export const OwnerBookings = () => {
                                 <FiCheck /> Accept
                               </button>
                               <button
-                                onClick={() =>
-                                  handleStatusChange(b.id, "reject")
-                                }
+                                onClick={() => {
+                                  setRejectModalBooking(b);
+                                  setRejectionReason("");
+                                }}
                                 style={{
                                   padding: "5px 10px",
                                   backgroundColor: "#ef4444",
@@ -451,17 +478,7 @@ export const OwnerBookings = () => {
                               </span>
                             )}
 
-                          {bStatus === "ACCEPTED" && pStatus === "PAID" && (
-                            <button
-                              onClick={() =>
-                                handleStatusChange(b.id, "complete")
-                              }
-                            >
-                              ✨ Mark as Completed
-                            </button>
-                          )}
-
-                          {/* 4. PAYMENT APPROVED (PAID) -> READY TO COMPLETE */}
+                          {/* 3. PAYMENT APPROVED (PAID) -> READY TO COMPLETE */}
                           {(bStatus === "CONFIRMED" ||
                             bStatus === "ACCEPTED") &&
                             pStatus === "PAID" && (
@@ -577,14 +594,20 @@ export const OwnerBookings = () => {
               </div>
               <div>
                 <strong>Assigned Employee:</strong>{" "}
-                {selectedBooking.employee?.name ||
+                {selectedBooking.employee?.fullName ||
+                  selectedBooking.employee?.name ||
                   selectedBooking.employeeName ||
                   "Unassigned"}
               </div>
               <div>
                 <strong>Date & Time:</strong>{" "}
-                {selectedBooking.appointmentDate || selectedBooking.date} at{" "}
-                {selectedBooking.appointmentTime || selectedBooking.time}
+                {selectedBooking.appointmentDate || selectedBooking.date
+                  ? formatDate(selectedBooking.appointmentDate || selectedBooking.date)
+                  : "N/A"}{" "}
+                at{" "}
+                {selectedBooking.appointmentTime || selectedBooking.time
+                  ? formatTime(selectedBooking.appointmentTime || selectedBooking.time)
+                  : "N/A"}
               </div>
               <div>
                 <strong>Price:</strong>{" "}
@@ -597,6 +620,12 @@ export const OwnerBookings = () => {
                 <strong>Booking Status:</strong>{" "}
                 {selectedBooking.bookingStatus || selectedBooking.status}
               </div>
+              {selectedBooking.rejectionReason && (
+                <div style={{ color: "#dc2626" }}>
+                  <strong>Rejection Reason:</strong>{" "}
+                  {selectedBooking.rejectionReason}
+                </div>
+              )}
               <div>
                 <strong>Payment Status:</strong> {selectedBooking.paymentStatus}
               </div>
@@ -609,6 +638,183 @@ export const OwnerBookings = () => {
               >
                 Close
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* REJECTION REASON MODAL */}
+      {rejectModalBooking && (
+        <div style={modalOverlay}>
+          <div style={{ ...modalContent, maxWidth: "500px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "1.15rem",
+                  fontWeight: "700",
+                  color: "#dc2626",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <FiXCircle /> Reject Appointment #{rejectModalBooking.id}
+              </h3>
+              <button
+                onClick={() => setRejectModalBooking(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#4b5563",
+                marginBottom: "14px",
+                lineHeight: "1.4",
+              }}
+            >
+              Please provide a reason for declining{" "}
+              <strong>
+                {rejectModalBooking.customer?.fullName ||
+                  rejectModalBooking.customerName ||
+                  "Customer"}
+              </strong>
+              's request for{" "}
+              <strong>
+                {rejectModalBooking.service?.name ||
+                  rejectModalBooking.serviceName ||
+                  "Service"}
+              </strong>
+              . This explanation will be sent directly to the customer on their dashboard bell and Telegram.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: "700",
+                color: "#374151",
+                marginBottom: "8px",
+              }}
+            >
+              Quick Presets:
+            </label>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                marginBottom: "14px",
+              }}
+            >
+              {[
+                "Fully booked at this time",
+                "Specialist unavailable",
+                "Time slot conflict",
+                "Salon closed / maintenance",
+                "Emergency / Schedule conflict",
+              ].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setRejectionReason(preset)}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor:
+                      rejectionReason === preset ? "#fee2e2" : "#f9fafb",
+                    color: rejectionReason === preset ? "#991b1b" : "#374151",
+                    fontSize: "0.75rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: "700",
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Rejection Note / Explanation:
+            </label>
+            <textarea
+              rows={3}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="e.g. We are fully booked at 2:00 PM. Please consider booking after 4:00 PM."
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "0.85rem",
+                fontFamily: "inherit",
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: "20px",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <Button
+                onClick={() => setRejectModalBooking(null)}
+                variant="secondary"
+                disabled={submittingReject}
+              >
+                Cancel
+              </Button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={submittingReject}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  cursor: submittingReject ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                {submittingReject ? "Declining..." : "Confirm Rejection"}
+              </button>
             </div>
           </div>
         </div>
@@ -639,7 +845,7 @@ const statNumberStyle = {
 
 const thStyle = {
   padding: "12px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "700",
   fontSize: "0.78rem",
   textTransform: "uppercase",
@@ -648,7 +854,7 @@ const thStyle = {
 
 const tdStyle = {
   padding: "14px 16px",
-  color: "#111827",
+  color: "var(--color-dark)",
 };
 
 const modalOverlay = {
@@ -657,7 +863,7 @@ const modalOverlay = {
   left: 0,
   width: "100vw",
   height: "100vh",
-  backgroundColor: "rgba(0,0,0,0.4)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -666,12 +872,13 @@ const modalOverlay = {
 };
 
 const modalContent = {
-  backgroundColor: "#ffffff",
+  backgroundColor: "var(--color-card)",
   borderRadius: "16px",
   padding: "24px",
   maxWidth: "480px",
   width: "100%",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+  boxShadow: "var(--shadow-lg)",
+  border: "1px solid var(--color-border)",
 };
 
 const getBookingBadgeStyle = (status) => {

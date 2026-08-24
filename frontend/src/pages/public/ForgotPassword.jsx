@@ -106,26 +106,99 @@ const ForgotPassword = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
-        backgroundColor: "var(--color-bg-warm)",
+        padding: "32px 16px",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
+      {/* ─── Blurred Luxury Background Image ─── */}
       <div
-        className="glass-panel"
         style={{
+          position: "fixed",
+          inset: "-20px",
+          backgroundImage:
+            "linear-gradient(135deg, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.75) 100%), url('https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1920&q=80')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "blur(12px)",
+          transform: "scale(1.05)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
           width: "100%",
-          maxWidth: "440px",
-          borderRadius: "var(--radius-ios)",
-          padding: "40px",
+          maxWidth: "460px",
+          borderRadius: "24px",
+          padding: "38px 34px",
           backgroundColor: "var(--color-card)",
+          border: "1px solid var(--color-border)",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
         }}
       >
-        <div style={{ marginBottom: "32px", textAlign: "center" }}>
+        {/* Top Brand Logo */}
+        <div style={{ textAlign: "center", marginBottom: "22px" }}>
+          <Link
+            to="/"
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
+              textDecoration: "none",
+            }}
+          >
+            <img
+              src="/veloura-logo.png"
+              alt="Veloura"
+              style={{
+                width: "46px",
+                height: "46px",
+                borderRadius: "12px",
+                boxShadow: "0 8px 18px rgba(216, 69, 112, 0.3)",
+              }}
+            />
+            <div>
+              <div
+                style={{
+                  fontSize: "1.45rem",
+                  fontWeight: "800",
+                  fontFamily: "var(--font-display)",
+                  color: "var(--color-dark)",
+                  lineHeight: 1.1,
+                }}
+              >
+                Veloura
+              </div>
+              <div
+                style={{
+                  fontSize: "0.66rem",
+                  fontWeight: "700",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--color-primary)",
+                  marginTop: "2px",
+                }}
+              >
+                Beauty Salon Network
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        <div style={{ marginBottom: "24px", textAlign: "center" }}>
           <h2
             style={{
-              fontSize: "1.85rem",
+              fontSize: "1.55rem",
+              fontWeight: "800",
               color: "var(--color-dark)",
-              marginBottom: "8px",
+              margin: "0 0 6px",
             }}
           >
             {step === 1 ? "Forgot Password?" : "Reset Password"}

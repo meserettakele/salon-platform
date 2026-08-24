@@ -9,6 +9,7 @@ const {
   sequelize,
 } = require("../models");
 const bcrypt = require("bcryptjs");
+const createNotification = require("../utils/createNotification");
 
 // --- Category CRUD Matrix ---
 exports.createCategory = async (data) => {
@@ -18,10 +19,20 @@ exports.createCategory = async (data) => {
     error.statusCode = 409;
     throw error;
   }
-  return await Category.create({
+  const category = await Category.create({
     name: data.name,
     description: data.description,
   });
+
+  // 🔔 Notify Admin of newly created category
+  await createNotification({
+    recipientRole: "ADMIN",
+    title: "🏷️ Service Category Added",
+    message: `A new beauty service category '${category.name}' has been added to the platform catalog.`,
+    type: "SYSTEM",
+  });
+
+  return category;
 };
 
 exports.updateCategory = async (id, data) => {
@@ -51,7 +62,17 @@ exports.deleteCategory = async (id) => {
     error.statusCode = 404;
     throw error;
   }
+  const catName = category.name;
   await category.destroy();
+
+  // 🔔 Notify Admin of deleted category
+  await createNotification({
+    recipientRole: "ADMIN",
+    title: "🗑️ Service Category Removed",
+    message: `Category '${catName}' was removed from the platform catalog.`,
+    type: "SYSTEM",
+  });
+
   return true;
 };
 
@@ -65,19 +86,25 @@ exports.registerSalonProfile = async (salonData) => {
     ...salonData,
     latitude: salonData.latitude || 0.0,
     longitude: salonData.longitude || 0.0,
-    status: "PENDING",
+    status: salonData.status || "ACTIVE",
   });
 
-  try {
-    const createNotification = require("../utils/createNotification");
+  // If ownerId was provided on creation, send comprehensive notification
+  if (salon.ownerId) {
+    const owner = await User.findByPk(salon.ownerId);
     await createNotification({
       recipientRole: "ADMIN",
-      title: "New Salon Registration",
-      message: `Salon '${salon.name}' has registered and is pending approval.`,
+      title: "New Salon Registered",
+      message:
+        `🏪 *Salon:* ${salon.name}\n` +
+        `📍 *Location:* ${salon.address || "Main branch"}, ${salon.subCity ? `${salon.subCity}, ` : ""}${salon.city || "Addis Ababa"}\n` +
+        `📞 *Contact:* ${salon.phone || owner?.phone || "N/A"}\n` +
+        `👤 *Owner:* ${owner?.fullName || "Assigned Owner"}\n` +
+        `📱 *Owner Phone:* \`${owner?.phone || "N/A"}\`\n` +
+        `📧 *Owner Email:* ${owner?.email || "N/A"}\n` +
+        `⏳ *Status:* ${salon.status || "ACTIVE"}`,
       type: "SALON_REGISTRATION",
     });
-  } catch (notifErr) {
-    console.error("Failed to send admin notification for salon registration:", notifErr);
   }
 
   return salon;
@@ -102,7 +129,15 @@ exports.modifySalonStatus = async (id, targetStatus) => {
     error.statusCode = 400;
     throw error;
   }
-  const salon = await Salon.findByPk(id);
+  const salon = await Salon.findByPk(id, {
+    include: [
+      {
+        model: User,
+        as: "owner",
+        attributes: ["id", "fullName", "phone", "email"],
+      },
+    ],
+  });
   if (!salon) {
     const error = new Error("Target salon profile not found.");
     error.statusCode = 404;
@@ -110,6 +145,68 @@ exports.modifySalonStatus = async (id, targetStatus) => {
   }
   salon.status = targetStatus;
   await salon.save();
+
+  const isSuspended = targetStatus === "SUSPENDED";
+  const isActive = targetStatus === "ACTIVE";
+
+  // 🔔 1. Clear, structured confirmation to Admin
+  const adminTitle = isSuspended
+    ? "⛔ Salon Suspended"
+    : isActive
+    ? "✅ Salon Activated & Approved"
+    : "📋 Salon Status: PENDING";
+
+  const adminMsg = isSuspended
+    ? `You have suspended *${salon.name}*.\n\n` +
+      `🏪 *Salon:* ${salon.name}\n` +
+      `👤 *Owner:* ${salon.owner?.fullName || "Owner"} (\`${salon.owner?.phone || "N/A"}\`)\n` +
+      `📍 *Location:* ${salon.city || "Addis Ababa"}, ${salon.address || "Main branch"}\n` +
+      `⚠️ *Action:* The salon is now suspended. Operations, discovery, and booking services are temporarily disabled.`
+    : isActive
+    ? `You have approved and activated *${salon.name}*.\n\n` +
+      `🏪 *Salon:* ${salon.name}\n` +
+      `👤 *Owner:* ${salon.owner?.fullName || "Owner"} (\`${salon.owner?.phone || "N/A"}\`)\n` +
+      `📍 *Location:* ${salon.city || "Addis Ababa"}, ${salon.address || "Main branch"}\n` +
+      `🎉 *Status:* ACTIVE. The salon is live and accessible to customers on Veloura.`
+    : `Salon '${salon.name}' has been set to PENDING by administration.`;
+
+  await createNotification({
+    recipientRole: "ADMIN",
+    title: adminTitle,
+    message: adminMsg,
+    type: "SALON_STATUS",
+  });
+
+  // 🔔 2. Clear, structured alert to Salon Owner in their Bot & Dashboard Bell
+  if (salon.ownerId) {
+    const ownerTitle = isSuspended
+      ? "⛔ Salon Account Suspended"
+      : isActive
+      ? "✅ Salon Activated & Approved!"
+      : "📋 Salon Status Updated";
+
+    const ownerMsg = isSuspended
+      ? `Your salon *${salon.name}* has been suspended by the platform administrator.\n\n` +
+        `🏪 *Salon:* ${salon.name}\n` +
+        `📝 *Status:* SUSPENDED\n` +
+        `⚠️ *Notice:* Your salon is currently inaccessible on the platform. Bookings and salon operations are temporarily disabled.\n\n` +
+        `_If you believe this is an error or need assistance, please contact platform support._`
+      : isActive
+      ? `Congratulations! Your salon *${salon.name}* is now active and approved on Veloura.\n\n` +
+        `🏪 *Salon:* ${salon.name}\n` +
+        `🎉 *Status:* ACTIVE\n` +
+        `✨ *Notice:* Customers can now discover your salon, view your services, and book appointments online. Welcome aboard!`
+      : `Your salon '${salon.name}' status has been updated to PENDING on Veloura.`;
+
+    await createNotification({
+      userId: salon.ownerId,
+      recipientRole: "OWNER",
+      title: ownerTitle,
+      message: ownerMsg,
+      type: "SALON_STATUS",
+    });
+  }
+
   return salon;
 };
 
@@ -184,6 +281,31 @@ exports.bindOwnerToSalon = async (salonId, ownerId) => {
 
     salon.ownerId = ownerId;
     await salon.save({ transaction: t });
+
+    // 🔔 Single comprehensive notification to Admin with all salon & owner info
+    await createNotification({
+      recipientRole: "ADMIN",
+      title: "🏢 New Salon Registered",
+      message:
+        `🏪 *Salon:* ${salon.name}\n` +
+        `📍 *Location:* ${salon.address || "Main branch"}, ${salon.subCity ? `${salon.subCity}, ` : ""}${salon.city || "Addis Ababa"}\n` +
+        `📞 *Contact:* ${salon.phone || targetUser.phone || "N/A"}\n` +
+        `👤 *Owner:* ${targetUser.fullName}\n` +
+        `📱 *Owner Phone:* \`${targetUser.phone}\`\n` +
+        `📧 *Owner Email:* ${targetUser.email || "N/A"}\n` +
+        `⏳ *Status:* ${salon.status || "ACTIVE"}`,
+      type: "SALON_REGISTRATION",
+    });
+
+    // 🔔 Welcome Notification to Owner
+    await createNotification({
+      userId: targetUser.id,
+      recipientRole: "OWNER",
+      title: "🏢 Welcome to Veloura!",
+      message: `Your salon profile '${salon.name}' has been created and linked to your account. You can now manage your services, specialists, and bookings.`,
+      type: "SYSTEM",
+    });
+
     return salon;
   });
 };

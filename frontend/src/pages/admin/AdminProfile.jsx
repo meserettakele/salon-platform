@@ -5,6 +5,7 @@ import { Button } from "../../components/common/Button";
 import { Input } from "../../components/common/Input";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { Loader } from "../../components/common/Loader";
+import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
 import api from "../../services/api";
 
 export const AdminProfile = () => {
@@ -784,6 +785,8 @@ export const AdminProfile = () => {
                 Save Preferences
               </Button>
             </div>
+
+            <DateTimeSettingsCard />
           </div>
         )}
       </Card>

@@ -7,8 +7,10 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import ErrorMessage from "../../components/common/ErrorMessage";
+import { useDateTime } from "../../context/DateTimeContext";
 
 const SystemReport = () => {
+  const { formatDate } = useDateTime();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -240,14 +242,14 @@ const SystemReport = () => {
             style={{
               fontSize: "1.75rem",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: 0,
             }}
           >
             📊 System & Business Reports
           </h1>
           <p
-            style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "4px" }}
+            style={{ fontSize: "0.875rem", color: "var(--color-muted)", marginTop: "4px" }}
           >
             Real-time business statistics, monthly revenue growth, and platform
             performance.
@@ -307,7 +309,7 @@ const SystemReport = () => {
         style={{
           fontSize: "1.2rem",
           fontWeight: "700",
-          color: "#111827",
+          color: "var(--color-dark)",
           marginBottom: "16px",
         }}
       >
@@ -323,7 +325,7 @@ const SystemReport = () => {
       >
         <Card style={{ padding: "20px" }}>
           <h3
-            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#374151" }}
+            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "var(--color-dark)" }}
           >
             Monthly Bookings
           </h3>
@@ -337,7 +339,7 @@ const SystemReport = () => {
 
         <Card style={{ padding: "20px" }}>
           <h3
-            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#374151" }}
+            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "var(--color-dark)" }}
           >
             Revenue by Month (ETB)
           </h3>
@@ -352,7 +354,7 @@ const SystemReport = () => {
 
         <Card style={{ padding: "20px" }}>
           <h3
-            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#374151" }}
+            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "var(--color-dark)" }}
           >
             Most Popular Services
           </h3>
@@ -367,7 +369,7 @@ const SystemReport = () => {
 
         <Card style={{ padding: "20px" }}>
           <h3
-            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "#374151" }}
+            style={{ margin: "0 0 16px 0", fontSize: "1rem", color: "var(--color-dark)" }}
           >
             Top-Performing Salons
           </h3>
@@ -386,7 +388,7 @@ const SystemReport = () => {
         style={{
           fontSize: "1.2rem",
           fontWeight: "700",
-          color: "#111827",
+          color: "var(--color-dark)",
           marginBottom: "16px",
         }}
       >
@@ -404,10 +406,10 @@ const SystemReport = () => {
           <div
             style={{
               padding: "14px 16px",
-              backgroundColor: "#f9fafb",
-              borderBottom: "1px solid #e5e7eb",
+              backgroundColor: "var(--color-card-subtle)",
+              borderBottom: "1px solid var(--color-border)",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
             }}
           >
             🏆 Top 5 Salons
@@ -422,9 +424,9 @@ const SystemReport = () => {
             <thead>
               <tr
                 style={{
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--color-border)",
                   textAlign: "left",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                 }}
               >
                 <th style={{ padding: "10px 16px" }}>Salon</th>
@@ -636,7 +638,7 @@ const SystemReport = () => {
                       }}
                     >
                       {c.createdAt
-                        ? new Date(c.createdAt).toLocaleDateString()
+                        ? formatDate(c.createdAt)
                         : "Recent"}
                     </td>
                   </tr>
@@ -670,7 +672,7 @@ const KpiCard = ({ title, value, icon, color, bgColor }) => (
           style={{
             fontSize: "1.5rem",
             fontWeight: "700",
-            color: "#111827",
+            color: "var(--color-dark)",
             marginTop: "4px",
           }}
         >
@@ -746,7 +748,7 @@ const BarChartData = ({ data, dataKey, labelKey, color, isCurrency }) => {
             <span
               style={{
                 fontSize: "0.65rem",
-                color: "#6b7280",
+                color: "var(--color-muted)",
                 marginTop: "6px",
               }}
             >
@@ -772,7 +774,7 @@ const HorizontalList = ({
 
   if (data.length === 0) {
     return (
-      <div style={{ color: "#9ca3af", fontSize: "0.85rem" }}>
+      <div style={{ color: "var(--color-muted-light)", fontSize: "0.85rem" }}>
         No data recorded yet.
       </div>
     );
@@ -793,10 +795,10 @@ const HorizontalList = ({
                 marginBottom: "4px",
               }}
             >
-              <span style={{ fontWeight: "600", color: "#374151" }}>
+              <span style={{ fontWeight: "600", color: "var(--color-dark)" }}>
                 {item[labelKey]}
               </span>
-              <span style={{ fontWeight: "700", color: "#111827" }}>
+              <span style={{ fontWeight: "700", color: "var(--color-dark)" }}>
                 {isCurrency
                   ? `${val.toLocaleString()} ETB`
                   : `${val} ${unit || ""}`}
@@ -806,7 +808,7 @@ const HorizontalList = ({
               style={{
                 height: "6px",
                 width: "100%",
-                backgroundColor: "#f3f4f6",
+                backgroundColor: "var(--color-card-subtle)",
                 borderRadius: "3px",
               }}
             >

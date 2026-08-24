@@ -237,6 +237,11 @@ exports.browseAndSearchSalons = async (filters) => {
       as: "images",
       attributes: ["imageUrl"],
     },
+    {
+      model: BusinessHour,
+      as: "businessHours",
+      attributes: ["id", "day", "openingTime", "closingTime", "isClosed"],
+    },
   ];
 
   if (categoryId) {
@@ -288,7 +293,16 @@ exports.getDetailedSalonCatalog = async (salonId) => {
       {
         model: Service,
         as: "services",
-        attributes: ["id", "name", "description", "price", "duration"],
+        attributes: [
+          "id",
+          "name",
+          "description",
+          "price",
+          "duration",
+          "image",
+          "categoryId",
+          "isActive",
+        ],
       },
       {
         model: Employee,
@@ -714,6 +728,18 @@ exports.createBookingRequest = async (customerId, bookingData) => {
     createdAppointments.push(newAppointment);
   }
 
+  // Trigger Telegram real-time push notifications
+  try {
+    const { notifyNewBooking } = require("./telegramService");
+    for (const appt of createdAppointments) {
+      notifyNewBooking(appt.id).catch((err) =>
+        console.warn("Telegram notification error:", err.message)
+      );
+    }
+  } catch (tgErr) {
+    console.warn("Skipping Telegram notification:", tgErr.message);
+  }
+
   return createdAppointments;
 };
 
@@ -832,7 +858,7 @@ exports.getAvailableSlots = async ({ appointmentDate, services }) => {
         [Op.in]: serviceIds,
       },
     },
-    attributes: ["id", "name", "duration"],
+    attributes: ["id", "name", "duration", "salonId"],
   });
 
   if (serviceRecords.length !== services.length) {
@@ -1089,26 +1115,76 @@ exports.getAvailableSlots = async ({ appointmentDate, services }) => {
   };
 
   // =========================================================
-  // AVAILABLE STARTING TIMES
+  // SALON OPERATIONAL BUSINESS HOURS & CLOSED DAYS
   // =========================================================
 
-  const allSlots = [
-    "09:00",
-    "09:30",
-    "10:00",
-    "10:30",
-    "11:00",
-    "11:30",
-    "12:00",
-    "12:30",
-    "13:00",
-    "13:30",
-    "14:00",
-    "14:30",
-    "15:00",
-    "15:30",
-    "16:00",
+  const salonId = serviceRecords[0]?.salonId;
+  const daysOfWeek = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
   ];
+
+  const [yyyy, mm, dd] = appointmentDate.split("-").map(Number);
+  const targetDate = new Date(yyyy, mm - 1, dd);
+  const targetDayName = daysOfWeek[targetDate.getDay()];
+
+  // Default operational hours (08:30 – 18:00) if no custom schedule exists
+  let startMinutes = 8 * 60 + 30; // 08:30 (2:30 ጠዋት)
+  let endMinutes = 18 * 60; // 18:00 (12:00 ማታ)
+  let salonIsClosed = false;
+
+  if (salonId) {
+    const businessHour = await BusinessHour.findOne({
+      where: {
+        salonId,
+        day: targetDayName,
+      },
+    });
+
+    if (businessHour) {
+      if (businessHour.isClosed) {
+        salonIsClosed = true;
+      } else {
+        if (businessHour.openingTime) {
+          startMinutes = timeToMinutes(businessHour.openingTime);
+        }
+        if (businessHour.closingTime) {
+          endMinutes = timeToMinutes(businessHour.closingTime);
+        }
+      }
+    }
+  }
+
+  // If the salon is closed on this day of the week, return empty slots
+  if (salonIsClosed) {
+    console.log(
+      `Salon ${salonId} is CLOSED on ${targetDayName} (${appointmentDate})`,
+    );
+    return [];
+  }
+
+  // =========================================================
+  // DYNAMIC AVAILABLE STARTING TIMES WITHIN BUSINESS HOURS
+  // =========================================================
+
+  const totalServiceDuration = serviceSequence.reduce(
+    (sum, item) => sum + item.duration,
+    0,
+  );
+
+  const allSlots = [];
+  for (
+    let mins = startMinutes;
+    mins + totalServiceDuration <= endMinutes;
+    mins += 30
+  ) {
+    allSlots.push(minutesToTime(mins));
+  }
 
   const availableSlots = allSlots.filter((slot) => {
     const startingTime = timeToMinutes(slot);
@@ -1116,7 +1192,10 @@ exports.getAvailableSlots = async ({ appointmentDate, services }) => {
     return canScheduleSequence(startingTime);
   });
 
-  console.log("MULTI-SERVICE AVAILABLE SLOTS:", availableSlots);
+  console.log(
+    `SLOTS FOR ${targetDayName} (${appointmentDate}, Salon ${salonId}, ${minutesToTime(startMinutes)} - ${minutesToTime(endMinutes)}):`,
+    availableSlots,
+  );
 
   return availableSlots;
 };

@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { Button } from "../common/Button";
 import api from "../../services/api";
 
 export const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [salonName, setSalonName] = useState("");
 
@@ -22,47 +24,48 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
     }
   }, [user]);
 
-  // Navigation routes configuration for each user role
+  // Navigation routes configuration for each user role with multi-language labels
   const menuConfigs = {
     CUSTOMER: [
-      { path: "/customer/dashboard", label: "🏠 Dashboard" },
-      { path: "/customer/book", label: "📅 Book Appointment" },
-      { path: "/customer/appointments", label: "📅 Booking History" },
-      { path: "/customer/transactions", label: "💳 Transactions" },
-      { path: "/customer/notifications", label: "🔔 Notifications" },
+      { path: "/customer/dashboard", icon: "🏠", label: t("dashboard") },
+      { path: "/customer/book", icon: "📅", label: t("bookAppointment") },
+      { path: "/customer/appointments", icon: "🕒", label: t("myAppointments") },
+      { path: "/customer/transactions", icon: "💳", label: t("transactions") },
+      { path: "/customer/notifications", icon: "🔔", label: t("notifications") },
     ],
     OWNER: [
-      { path: "/owner/dashboard", label: "🏠 Dashboard" },
-      { path: "/owner/salon", label: "🏪 My Salon" },
-      { path: "/owner/employees", label: "👥 Employees" },
-      { path: "/owner/services", label: "💄 Services" },
-      { path: "/owner/business-hours", label: "🕒 Business Hours" },
-      { path: "/owner/bookings", label: "📅 Bookings" },
-      { path: "/owner/customers", label: "👥 Customers" },
-      { path: "/owner/transactions", label: "💳 Transactions" },
-      { path: "/owner/notifications", label: "🔔 Notifications" },
+      { path: "/owner/dashboard", icon: "🏠", label: t("dashboard") },
+      { path: "/owner/salon", icon: "🏪", label: t("salons") },
+      { path: "/owner/employees", icon: "👥", label: t("employees") },
+      { path: "/owner/services", icon: "💄", label: t("services") },
+      { path: "/owner/business-hours", icon: "🕒", label: t("businessHours") },
+      { path: "/owner/bookings", icon: "📅", label: t("bookings") },
+      { path: "/owner/customers", icon: "👥", label: t("customers") },
+      { path: "/owner/transactions", icon: "💳", label: t("transactions") },
+      { path: "/owner/notifications", icon: "🔔", label: t("notifications") },
     ],
     EMPLOYEE: [
-      { path: "/employee/dashboard", label: "🏠 Dashboard" },
-      { path: "/employee/bookings", label: "📅 My Bookings" },
-      { path: "/employee/profile", label: "👤 My Profile" },
-      { path: "/employee/notifications", label: "🔔 Notifications" },
+      { path: "/employee/dashboard", icon: "🏠", label: t("dashboard") },
+      { path: "/employee/bookings", icon: "📅", label: t("bookings") },
+      { path: "/employee/profile", icon: "👤", label: t("profile") },
+      { path: "/employee/notifications", icon: "🔔", label: t("notifications") },
     ],
     ADMIN: [
-      { path: "/admin/dashboard", label: "🏠 Dashboard" },
-      { path: "/admin/salons", label: "🏪 Salons Management" },
-      { path: "/admin/categories", label: "🎨 Manage Categories" },
-      { path: "/admin/bookings", label: "📅 Bookings Monitor" },
-      { path: "/admin/reports", label: "📊 System Reports" },
-      { path: "/admin/profile", label: "👤 Admin Profile" },
-      { path: "/admin/notifications", label: "🔔 Notifications" },
+      { path: "/admin/dashboard", icon: "🏠", label: t("dashboard") },
+      { path: "/admin/salons", icon: "🏪", label: t("salons") },
+      { path: "/admin/categories", icon: "🎨", label: t("categories") },
+      { path: "/admin/bookings", icon: "📅", label: t("bookings") },
+      { path: "/admin/reports", icon: "📊", label: t("systemReport") },
+      { path: "/admin/profile", icon: "👤", label: t("profile") },
+      { path: "/admin/notifications", icon: "🔔", label: t("notifications") },
     ],
   };
 
   const activeStyle = {
     color: "var(--color-primary)",
-    backgroundColor: "rgba(233, 30, 99, 0.05)",
-    fontWeight: "600",
+    backgroundColor: "var(--color-primary-light)",
+    fontWeight: "700",
+    borderLeft: "3px solid var(--color-primary)",
   };
 
   const handleLogout = () => {
@@ -85,7 +88,6 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
     if (window.innerWidth <= 992) setIsOpen(false);
   };
 
-  // Safe user role normalization (handles "ADMIN", "admin", "Admin")
   const currentRole = user?.role ? user.role.toUpperCase() : "";
 
   return (
@@ -100,7 +102,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: "blur(4px)",
             zIndex: 998,
             transition: "opacity 0.3s ease",
@@ -110,7 +112,6 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
 
       {/* Main Sidebar Drawer Container */}
       <aside
-        className="glass-panel"
         style={{
           width: "280px",
           height: "100vh",
@@ -118,7 +119,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
           top: 0,
           left: 0,
           borderRadius: "0 var(--radius-ios) var(--radius-ios) 0",
-          borderLeft: "none",
+          borderRight: "1px solid var(--color-border)",
           padding: "24px 16px",
           display: "flex",
           flexDirection: "column",
@@ -128,6 +129,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
           transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
           backgroundColor: "var(--color-card)",
           overflowY: "auto",
+          boxSizing: "border-box",
         }}
       >
         <div>
@@ -156,7 +158,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
             </div>
           )}
 
-          {/* 🚀 TELEGRAM-STYLE CLICKABLE PROFILE HEADER */}
+          {/* Clickable Profile Header */}
           <div
             onClick={handleProfileClick}
             style={{
@@ -164,9 +166,9 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
               alignItems: "center",
               gap: "12px",
               padding: "12px",
-              marginBottom: "24px",
+              marginBottom: "20px",
               borderRadius: "var(--radius-ui)",
-              backgroundColor: "rgba(233, 30, 99, 0.06)",
+              backgroundColor: "var(--color-primary-light)",
               cursor: "pointer",
               transition: "background-color 0.2s ease",
             }}
@@ -205,7 +207,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                   }}
                 />
               ) : (
-                (user?.fullName || user?.name || "O").charAt(0).toUpperCase()
+                (user?.fullName || user?.name || "U").charAt(0).toUpperCase()
               )}
             </div>
 
@@ -221,7 +223,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                   textOverflow: "ellipsis",
                 }}
               >
-                {user?.fullName || user?.name || "Salon Owner"}
+                {user?.fullName || user?.name || "User"}
               </div>
               <div
                 style={{
@@ -232,7 +234,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                 }}
               >
                 {currentRole === "OWNER"
-                  ? (salonName || "My Salon")
+                  ? (salonName || "Salon Owner")
                   : currentRole === "CUSTOMER"
                   ? "Customer Account"
                   : currentRole === "EMPLOYEE"
@@ -260,11 +262,13 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                   if (window.innerWidth <= 992) setIsOpen(false);
                 }}
                 style={({ isActive }) => ({
-                  padding: "12px 16px",
+                  padding: "11px 14px",
                   borderRadius: "var(--radius-ui)",
-                  fontSize: "0.95rem",
+                  fontSize: "0.92rem",
                   transition: "var(--transition-premium)",
-                  display: "block",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
                   textDecoration: "none",
                   color: isActive
                     ? "var(--color-primary)"
@@ -272,7 +276,8 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
                   ...(isActive ? activeStyle : {}),
                 })}
               >
-                {link.label}
+                <span>{link.icon}</span>
+                <span style={{ fontWeight: "600" }}>{link.label}</span>
               </NavLink>
             ))}
           </nav>
@@ -285,7 +290,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
             onClick={handleLogout}
             style={{ width: "100%" }}
           >
-            Logout
+            {t("logout")}
           </Button>
         </div>
       </aside>

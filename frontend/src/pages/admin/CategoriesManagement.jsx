@@ -169,14 +169,14 @@ const CategoriesManagement = () => {
             style={{
               fontSize: "1.5rem",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: 0,
             }}
           >
             🏷️ Service Categories
           </h1>
           <p
-            style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "4px" }}
+            style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginTop: "4px" }}
           >
             Organize service offerings across all salons (Hair, Makeup, Nails,
             Spa, etc.).
@@ -297,7 +297,7 @@ const CategoriesManagement = () => {
           <div
             style={{ ...modalContentStyle, maxWidth: "500px", width: "92%" }}
           >
-            <h2 style={{ marginTop: 0, fontSize: "1.2rem", color: "#111827" }}>
+            <h2 style={{ marginTop: 0, fontSize: "1.2rem", color: "var(--color-dark)" }}>
               {editingCategory ? "✏️ Edit Category" : "➕ Add Category"}
             </h2>
             <form onSubmit={handleSubmit}>
@@ -359,11 +359,11 @@ const CategoriesManagement = () => {
 // Component Styles
 const thStyle = {
   padding: "12px 16px",
-  color: "#4b5563",
+  color: "var(--color-muted)",
   fontWeight: "600",
   whiteSpace: "nowrap",
 };
-const tdStyle = { padding: "12px 16px", color: "#111827" };
+const tdStyle = { padding: "12px 16px", color: "var(--color-dark)" };
 
 const modalBackdropStyle = {
   position: "fixed",
@@ -371,7 +371,7 @@ const modalBackdropStyle = {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.5)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -380,7 +380,9 @@ const modalBackdropStyle = {
 };
 
 const modalContentStyle = {
-  backgroundColor: "#fff",
+  backgroundColor: "var(--color-card)",
+  border: "1px solid var(--color-border)",
+  boxShadow: "var(--shadow-lg)",
   padding: "20px",
   borderRadius: "12px",
   maxHeight: "85vh",

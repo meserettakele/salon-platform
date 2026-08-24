@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useDateTime } from "../../context/DateTimeContext";
 import api from "../../services/api";
 
 const MyAppointments = () => {
@@ -290,7 +291,7 @@ const MyAppointments = () => {
                 fontSize: "1.25rem",
                 fontWeight: "700",
                 marginBottom: "1rem",
-                color: "#111827",
+                color: "var(--color-dark)",
               }}
             >
               Select Payment Method
@@ -299,7 +300,7 @@ const MyAppointments = () => {
             <p
               style={{
                 fontSize: "0.875rem",
-                color: "#4b5563",
+                color: "var(--color-muted)",
                 marginBottom: "1rem",
               }}
             >
@@ -320,7 +321,7 @@ const MyAppointments = () => {
                 display: "block",
                 fontSize: "0.75rem",
                 fontWeight: "600",
-                color: "#374151",
+                color: "var(--color-dark)",
                 marginBottom: "0.5rem",
               }}
             >
@@ -391,6 +392,7 @@ const MyAppointments = () => {
 
 // ================= SUB-COMPONENT: BOOKING CARD =================
 const BookingCard = ({ booking, isCanceling, isPaying, onCancel, onPay }) => {
+  const { formatDate, formatTime } = useDateTime();
   const {
     salon,
     service,
@@ -401,10 +403,13 @@ const BookingCard = ({ booking, isCanceling, isPaying, onCancel, onPay }) => {
     rejectionReason,
   } = booking;
 
-  const appointmentDate =
-    booking.appointmentDate || booking.date || booking.bookingDate || "N/A";
-  const appointmentTime =
-    booking.appointmentTime || booking.time || booking.bookingTime || "N/A";
+  const rawDate =
+    booking.appointmentDate || booking.date || booking.bookingDate;
+  const rawTime =
+    booking.appointmentTime || booking.time || booking.bookingTime;
+
+  const appointmentDate = rawDate ? formatDate(rawDate) : "N/A";
+  const appointmentTime = rawTime ? formatTime(rawTime) : "N/A";
 
   const bookingStatus = (
     booking.bookingStatus ||
@@ -440,7 +445,7 @@ const BookingCard = ({ booking, isCanceling, isPaying, onCancel, onPay }) => {
             style={{
               fontWeight: "700",
               fontSize: "1.125rem",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: 0,
             }}
           >
@@ -449,7 +454,7 @@ const BookingCard = ({ booking, isCanceling, isPaying, onCancel, onPay }) => {
           <p
             style={{
               fontSize: "0.875rem",
-              color: "#4b5563",
+              color: "var(--color-muted)",
               margin: "0.25rem 0 0 0",
             }}
           >

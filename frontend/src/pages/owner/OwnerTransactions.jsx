@@ -99,7 +99,7 @@ const OwnerTransactions = () => {
 
     return {
       background: "rgba(107, 114, 128, 0.12)",
-      color: "#6b7280",
+      color: "var(--color-muted)",
     };
   };
 
@@ -108,19 +108,17 @@ const OwnerTransactions = () => {
     minWidth: "220px",
     padding: "22px",
     borderRadius: "18px",
-    background: "rgba(255, 255, 255, 0.72)",
-    backdropFilter: "blur(14px)",
-    WebkitBackdropFilter: "blur(14px)",
-    border: "1px solid rgba(255, 255, 255, 0.8)",
-    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.07)",
+    background: "var(--color-card)",
+    border: "1px solid var(--color-border)",
+    boxShadow: "var(--shadow-sm)",
   };
 
   const filterButtonStyle = (active) => ({
     padding: "9px 17px",
     borderRadius: "10px",
-    border: active ? "1px solid #111827" : "1px solid rgba(0, 0, 0, 0.1)",
-    background: active ? "#111827" : "#fff",
-    color: active ? "#fff" : "#4b5563",
+    border: active ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
+    background: active ? "var(--color-primary)" : "var(--color-card)",
+    color: active ? "#fff" : "var(--color-muted)",
     cursor: "pointer",
     fontWeight: "600",
   });
@@ -131,7 +129,7 @@ const OwnerTransactions = () => {
         style={{
           padding: "40px",
           textAlign: "center",
-          color: "#6b7280",
+          color: "var(--color-muted)",
         }}
       >
         Loading transactions...{" "}
@@ -144,7 +142,6 @@ const OwnerTransactions = () => {
       style={{
         padding: "24px",
         minHeight: "100%",
-        background: "linear-gradient(135deg, #fafafa, #f4f1f8)",
       }}
     >
       {/* Header */}
@@ -154,7 +151,7 @@ const OwnerTransactions = () => {
             margin: 0,
             fontSize: "28px",
             fontWeight: "700",
-            color: "#111827",
+            color: "var(--color-dark)",
           }}
         >
           💳 Transactions & Revenue{" "}
@@ -181,7 +178,7 @@ const OwnerTransactions = () => {
       >
         <div style={cardStyle}>
           <div style={{ fontSize: "28px", marginBottom: "10px" }}>💰</div>
-          <div style={{ color: "#6b7280", fontSize: "14px" }}>
+          <div style={{ color: "var(--color-muted)", fontSize: "14px" }}>
             Total Revenue
           </div>
           <div
@@ -189,7 +186,7 @@ const OwnerTransactions = () => {
               marginTop: "7px",
               fontSize: "24px",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
             }}
           >
             {formatAmount(summary.totalRevenue)}
@@ -198,7 +195,7 @@ const OwnerTransactions = () => {
             style={{
               marginTop: "5px",
               fontSize: "12px",
-              color: "#6b7280",
+              color: "var(--color-muted)",
             }}
           >
             {summary.totalPaidCount} paid transactions
@@ -207,7 +204,7 @@ const OwnerTransactions = () => {
 
         <div style={cardStyle}>
           <div style={{ fontSize: "28px", marginBottom: "10px" }}>📅</div>
-          <div style={{ color: "#6b7280", fontSize: "14px" }}>
+          <div style={{ color: "var(--color-muted)", fontSize: "14px" }}>
             Today's Revenue
           </div>
           <div
@@ -215,7 +212,7 @@ const OwnerTransactions = () => {
               marginTop: "7px",
               fontSize: "24px",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
             }}
           >
             {formatAmount(summary.todayRevenue)}
@@ -224,7 +221,7 @@ const OwnerTransactions = () => {
             style={{
               marginTop: "5px",
               fontSize: "12px",
-              color: "#6b7280",
+              color: "var(--color-muted)",
             }}
           >
             Paid earnings today
@@ -233,7 +230,7 @@ const OwnerTransactions = () => {
 
         <div style={cardStyle}>
           <div style={{ fontSize: "28px", marginBottom: "10px" }}>📊</div>
-          <div style={{ color: "#6b7280", fontSize: "14px" }}>
+          <div style={{ color: "var(--color-muted)", fontSize: "14px" }}>
             Monthly Revenue
           </div>
           <div
@@ -241,7 +238,7 @@ const OwnerTransactions = () => {
               marginTop: "7px",
               fontSize: "24px",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
             }}
           >
             {formatAmount(summary.monthlyRevenue)}
@@ -250,16 +247,16 @@ const OwnerTransactions = () => {
             style={{
               marginTop: "5px",
               fontSize: "12px",
-              color: "#6b7280",
+              color: "var(--color-muted)",
             }}
           >
-            Paid earnings this month
+            Current month earnings
           </div>
         </div>
 
         <div style={cardStyle}>
           <div style={{ fontSize: "28px", marginBottom: "10px" }}>⏳</div>
-          <div style={{ color: "#6b7280", fontSize: "14px" }}>
+          <div style={{ color: "var(--color-muted)", fontSize: "14px" }}>
             Pending Payments
           </div>
           <div
@@ -276,7 +273,7 @@ const OwnerTransactions = () => {
             style={{
               marginTop: "5px",
               fontSize: "12px",
-              color: "#6b7280",
+              color: "var(--color-muted)",
             }}
           >
             {summary.pendingCount} pending payments
@@ -289,9 +286,9 @@ const OwnerTransactions = () => {
         style={{
           display: "flex",
           flexWrap: "wrap",
-          alignItems: "center",
           justifyContent: "space-between",
-          gap: "15px",
+          alignItems: "center",
+          gap: "14px",
           marginBottom: "20px",
         }}
       >
@@ -324,9 +321,10 @@ const OwnerTransactions = () => {
             width: "min(100%, 360px)",
             padding: "11px 14px",
             borderRadius: "10px",
-            border: "1px solid rgba(0, 0, 0, 0.12)",
+            border: "1px solid var(--color-border)",
             outline: "none",
-            background: "rgba(255, 255, 255, 0.8)",
+            background: "var(--color-card)",
+            color: "var(--color-dark)",
             fontSize: "14px",
           }}
         />
@@ -337,11 +335,9 @@ const OwnerTransactions = () => {
         style={{
           overflowX: "auto",
           borderRadius: "18px",
-          background: "rgba(255, 255, 255, 0.75)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          border: "1px solid rgba(255, 255, 255, 0.8)",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.07)",
+          background: "var(--color-card)",
+          border: "1px solid var(--color-border)",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         <table
@@ -394,14 +390,14 @@ const OwnerTransactions = () => {
                   <tr
                     key={item.id}
                     style={{
-                      borderBottom: "1px solid rgba(0, 0, 0, 0.06)",
+                      borderBottom: "1px solid var(--color-border)",
                     }}
                   >
                     <td style={{ padding: "16px" }}>
                       <div
                         style={{
                           fontWeight: "600",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {customer?.fullName || "Customer"}
@@ -411,7 +407,7 @@ const OwnerTransactions = () => {
                         style={{
                           marginTop: "4px",
                           fontSize: "13px",
-                          color: "#6b7280",
+                          color: "var(--color-muted)",
                         }}
                       >
                         {customer?.phone || "No phone"}
@@ -421,7 +417,7 @@ const OwnerTransactions = () => {
                         style={{
                           marginTop: "2px",
                           fontSize: "13px",
-                          color: "#6b7280",
+                          color: "var(--color-muted-light)",
                         }}
                       >
                         {customer?.email || "No email"}
@@ -432,7 +428,7 @@ const OwnerTransactions = () => {
                       <div
                         style={{
                           fontWeight: "600",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {service?.name || "Service"}
@@ -442,7 +438,7 @@ const OwnerTransactions = () => {
                         style={{
                           marginTop: "5px",
                           fontSize: "13px",
-                          color: "#6b7280",
+                          color: "var(--color-muted)",
                         }}
                       >
                         Staff: {employee?.name || "Not assigned"}
@@ -453,7 +449,7 @@ const OwnerTransactions = () => {
                       <div
                         style={{
                           fontWeight: "700",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {formatAmount(payment?.amount)}
@@ -463,7 +459,7 @@ const OwnerTransactions = () => {
                         style={{
                           marginTop: "5px",
                           fontSize: "13px",
-                          color: "#6b7280",
+                          color: "var(--color-muted)",
                         }}
                       >
                         {payment?.paymentMethod || "—"}
@@ -474,7 +470,7 @@ const OwnerTransactions = () => {
                       <div
                         style={{
                           fontSize: "14px",
-                          color: "#374151",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {formatDateTime(payment?.createdAt)}
@@ -485,7 +481,7 @@ const OwnerTransactions = () => {
                       <span
                         style={{
                           fontSize: "13px",
-                          color: "#4b5563",
+                          color: "var(--color-muted)",
                           wordBreak: "break-word",
                         }}
                       >

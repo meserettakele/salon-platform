@@ -3,13 +3,18 @@
 import React, { useEffect, useState } from "react";
 import { FiCamera, FiCheck, FiLock, FiBell, FiUser } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { Card } from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
 import api from "../../services/api";
 
 export const CustomerProfile = () => {
   const { user, updateUser } = useAuth();
+  const { isDark, setTheme } = useTheme();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState(null);
@@ -75,11 +80,6 @@ export const CustomerProfile = () => {
         } else {
           setAvatar("");
         }
-
-        // Keep AuthContext synchronized
-        if (updateUser) {
-          updateUser(data);
-        }
       } catch (err) {
         console.error("Customer profile error:", err);
 
@@ -94,7 +94,7 @@ export const CustomerProfile = () => {
     };
 
     loadProfile();
-  }, [updateUser]);
+  }, []);
 
   // =========================================================
   // SAVE PROFILE DETAILS
@@ -573,10 +573,12 @@ export const CustomerProfile = () => {
 
           <PreferenceRow
             title="Dark theme"
-            description="Use the dark theme for your profile."
-            checked={darkTheme}
-            onChange={setDarkTheme}
+            description="Use the dark theme for your profile and app interface."
+            checked={isDark}
+            onChange={(checked) => setTheme(checked ? "dark" : "light")}
           />
+
+          <DateTimeSettingsCard />
         </Card>
       )}
     </div>

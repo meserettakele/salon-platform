@@ -85,7 +85,15 @@ exports.getEmployeeBookings = async (userId, statusFilter) => {
       {
         model: Payment,
         as: "payment",
-        attributes: ["id", "paymentStatus", "amount", "paymentMethod"],
+        attributes: [
+          "id",
+          "paymentStatus",
+          "amount",
+          "paymentMethod",
+          "transactionId",
+          "currency",
+          "createdAt",
+        ],
         required: false,
       },
     ],
@@ -160,8 +168,6 @@ exports.rejectBooking = async (userId, appointmentId, reason) => {
   appointment.bookingStatus = "REJECTED";
   appointment.cancelledAt = new Date();
 
-  // Only set this if your Appointment model
-  // contains a rejectionReason column.
   if (
     reason &&
     Object.prototype.hasOwnProperty.call(
@@ -178,7 +184,7 @@ exports.rejectBooking = async (userId, appointmentId, reason) => {
 };
 
 // =====================================================
-// COMPLETE APPOINTMENT
+// COMPLETE APPOINTMENT (REQUIRES PAYMENT VERIFICATION)
 // =====================================================
 
 exports.completeAppointment = async (userId, appointmentId) => {
@@ -189,6 +195,21 @@ exports.completeAppointment = async (userId, appointmentId) => {
     appointment.bookingStatus !== "CONFIRMED"
   ) {
     const error = new Error("Only accepted appointments can be completed.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // Verify payment has been completed
+  const isPaidDirect = appointment.paymentStatus === "PAID";
+  const paymentRecord = await Payment.findOne({
+    where: { appointmentId: appointment.id },
+  });
+  const isPaidRecord = paymentRecord && paymentRecord.paymentStatus === "PAID";
+
+  if (!isPaidDirect && !isPaidRecord) {
+    const error = new Error(
+      "Payment must be completed by the customer before this appointment can be marked as completed.",
+    );
     error.statusCode = 400;
     throw error;
   }

@@ -3,7 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "../../context/AuthContext";
+import { useDateTime } from "../../context/DateTimeContext";
 import { Button } from "../common/Button";
+import { DateTimeQuickToggle } from "../common/DateTimeQuickToggle";
 import api from "../../services/api";
 
 export const DashboardLayout = () => {
@@ -17,6 +19,11 @@ export const DashboardLayout = () => {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [activePopupNotification, setActivePopupNotification] = useState(null);
+  const [selectedMessageModal, setSelectedMessageModal] = useState(null);
+  const [notifFilter, setNotifFilter] = useState("ALL");
+  const previousNotifIdsRef = useRef(new Set());
+  const isInitialFetchRef = useRef(true);
 
   // Header Profile Dropdown & Logout Modal State
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -29,54 +36,93 @@ export const DashboardLayout = () => {
 
   // Helper to map event types or roles to icons
   const getNotificationIcon = (type) => {
-    switch (type) {
+    switch ((type || "").toUpperCase()) {
+      case "MESSAGE":
+      case "CONTACT":
+      case "INQUIRY":
+        return "💬";
+      case "SALON_REGISTRATION":
+        return "🏢";
+      case "SALON_STATUS":
+        return "🏷️";
+      case "OWNER_REGISTERED":
+        return "👤";
       case "BOOKING":
       case "APPOINTMENT":
-        return "📅";
+      case "BOOKING_ACCEPTED":
+      case "BOOKING_CONFIRMED":
+        return "✅";
+      case "APPOINTMENT_COMPLETED":
+        return "🌟";
       case "PAYMENT":
+      case "PAYMENT_REQUIRED":
+      case "PAYMENT_RECEIVED":
+      case "PAYMENT_SUCCESSFUL":
         return "💳";
       case "SYSTEM":
         return "⚙️";
       case "CANCELLED":
+      case "BOOKING_CANCELLED":
+      case "BOOKING_CANCELLED_BY_CUSTOMER":
+      case "BOOKING_REJECTED":
         return "❌";
       default:
         return "🔔";
     }
   };
 
+  const { formatDate, formatTime } = useDateTime();
+
   const fetchNotifications = async () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
     if (!token) return;
 
     try {
       setLoadingNotifications(true);
       const res = await api.get("/notifications");
 
-      if (res?.data) {
-        const rawData =
-          res.data.notifications ||
-          res.data.data?.notifications ||
-          res.data.data ||
-          (Array.isArray(res.data) ? res.data : []);
-
-        const formatted = rawData.map((item) => ({
-          id: item.id || item._id,
-          title: item.title || "Notification",
-          message: item.message || item.content || item.body || "",
-          icon: getNotificationIcon(item.type),
-          read: Boolean(item.isRead ?? item.read),
-          time: item.createdAt
-            ? new Date(item.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "Just now",
-          appointment: item.appointment || null,
-          link: item.link || item.targetUrl || null,
-        }));
-
-        setNotifications(formatted);
+      // Extract rawData array properly regardless of whether axios interceptor unpacked data
+      let rawData = [];
+      if (Array.isArray(res)) {
+        rawData = res;
+      } else if (Array.isArray(res?.notifications)) {
+        rawData = res.notifications;
+      } else if (Array.isArray(res?.data?.notifications)) {
+        rawData = res.data.notifications;
+      } else if (Array.isArray(res?.data)) {
+        rawData = res.data;
+      } else if (res?.notifications && typeof res.notifications === "object") {
+        rawData = Array.isArray(res.notifications) ? res.notifications : [res.notifications];
       }
+
+      const formatted = rawData.map((item) => ({
+        id: item.id || item._id,
+        title: item.title || "Notification",
+        message: item.message || item.content || item.body || "",
+        type: item.type || "SYSTEM",
+        icon: getNotificationIcon(item.type),
+        read: Boolean(item.isRead ?? item.read),
+        time: item.createdAt ? formatTime(item.createdAt) : "Just now",
+        date: item.createdAt ? formatDate(item.createdAt) : "",
+        appointment: item.appointment || null,
+        link: item.link || item.targetUrl || null,
+      }));
+
+      // Detect new unread notifications and pop out the toast
+      const newUnreads = formatted.filter(
+        (n) => !n.read && !previousNotifIdsRef.current.has(n.id)
+      );
+
+      if (newUnreads.length > 0 && !isInitialFetchRef.current) {
+        // Trigger the pop-out toast for the newest unread message
+        setActivePopupNotification(newUnreads[0]);
+      }
+
+      // Store all current IDs
+      previousNotifIdsRef.current = new Set(formatted.map((n) => n.id));
+      isInitialFetchRef.current = false;
+
+      setNotifications(formatted);
     } catch (err) {
       console.error(
         "Failed to load notifications:",
@@ -87,13 +133,24 @@ export const DashboardLayout = () => {
     }
   };
 
-  const handleNotificationClick = async (id, link) => {
-    await api.patch(`/notifications/${id}/read`).catch(() => null);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
+  const handleNotificationClick = async (notif) => {
+    if (!notif) return;
+    // Mark as read in backend
+    if (!notif.read) {
+      await api.patch(`/notifications/${notif.id}/read`).catch(() => null);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)),
+      );
+    }
     setIsNotificationsOpen(false);
-    if (link) navigate(link);
+    setActivePopupNotification(null);
+
+    // If it has a specific link, navigate, otherwise open message modal
+    if (notif.link) {
+      navigate(notif.link);
+    } else {
+      setSelectedMessageModal(notif);
+    }
   };
 
   const markAllAsRead = async () => {
@@ -102,12 +159,12 @@ export const DashboardLayout = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
     if (user && token) {
       fetchNotifications();
       const intervalId = setInterval(() => {
         fetchNotifications();
-      }, 15000);
+      }, 10000);
       return () => clearInterval(intervalId);
     }
   }, [user]);
@@ -160,7 +217,7 @@ export const DashboardLayout = () => {
   };
 
   const getSettingsPath = () => {
-    if (currentRole === "OWNER") return "/customer/settings"; // or owner settings
+    if (currentRole === "OWNER") return "/customer/settings";
     if (currentRole === "ADMIN") return "/admin/reports";
     return "/customer/settings";
   };
@@ -171,6 +228,32 @@ export const DashboardLayout = () => {
     if (currentRole === "EMPLOYEE") return "/employee/notifications";
     return "/customer/notifications";
   };
+
+  // Filtered notifications based on tab
+  const filteredNotifications = notifications.filter((item) => {
+    if (notifFilter === "MESSAGES") {
+      return (
+        item.type === "MESSAGE" ||
+        item.type === "CONTACT" ||
+        item.type === "INQUIRY" ||
+        item.title?.toLowerCase().includes("message") ||
+        item.title?.toLowerCase().includes("inquiry")
+      );
+    }
+    if (notifFilter === "BOOKINGS") {
+      const t = (item.type || "").toUpperCase();
+      return (
+        t.includes("BOOKING") ||
+        t.includes("APPOINTMENT") ||
+        t.includes("CANCEL") ||
+        t.includes("REJECT") ||
+        t.includes("ACCEPT") ||
+        t.includes("PAYMENT") ||
+        t.includes("CONFIRM")
+      );
+    }
+    return true;
+  });
 
   return (
     <div
@@ -193,9 +276,9 @@ export const DashboardLayout = () => {
           alignItems: "center",
           justifyContent: "space-between",
           zIndex: 90,
-          backgroundColor: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          backgroundColor: "var(--color-card)",
+          borderBottom: "1px solid var(--color-border)",
+          boxShadow: "var(--shadow-sm)",
           boxSizing: "border-box",
         }}
       >
@@ -227,7 +310,7 @@ export const DashboardLayout = () => {
               style={{
                 width: "20px",
                 height: "2px",
-                backgroundColor: "#374151",
+                backgroundColor: "var(--color-dark)",
                 borderRadius: "2px",
               }}
             ></span>
@@ -235,7 +318,7 @@ export const DashboardLayout = () => {
               style={{
                 width: "20px",
                 height: "2px",
-                backgroundColor: "#374151",
+                backgroundColor: "var(--color-dark)",
                 borderRadius: "2px",
               }}
             ></span>
@@ -243,72 +326,113 @@ export const DashboardLayout = () => {
               style={{
                 width: "20px",
                 height: "2px",
-                backgroundColor: "#374151",
+                backgroundColor: "var(--color-dark)",
                 borderRadius: "2px",
               }}
             ></span>
           </button>
 
-          <span
+          {/* Veloura Brand Header Emblem */}
+          <div
+            onClick={() => navigate("/")}
             style={{
-              fontWeight: "700",
-              fontFamily: "Manrope, sans-serif",
-              fontSize: isSmallMobile ? "0.95rem" : "1.1rem",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              color: "#111827",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              userSelect: "none",
             }}
+            title="Go to Veloura Home"
           >
-            Dashboard
-          </span>
+            <img
+              src="/veloura-logo.png"
+              alt="Veloura Logo"
+              style={{
+                width: isSmallMobile ? "28px" : "34px",
+                height: isSmallMobile ? "28px" : "34px",
+                borderRadius: "8px",
+                objectFit: "cover",
+                boxShadow: "0 2px 6px rgba(216, 69, 112, 0.2)",
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
+              <span
+                style={{
+                  fontWeight: "800",
+                  fontFamily: "var(--font-display)",
+                  fontSize: isSmallMobile ? "1.05rem" : "1.25rem",
+                  color: "var(--color-primary)",
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Veloura
+              </span>
+              <span
+                style={{
+                  fontSize: "0.58rem",
+                  fontWeight: "700",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--color-secondary)",
+                }}
+              >
+                Beauty Salon
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Right Side: Bell & Profile Picture Dropdown */}
+        {/* Right Side: Quick Date/Time Toggle, Bell & Profile Picture Dropdown */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: isSmallMobile ? "8px" : "16px",
+            gap: isSmallMobile ? "8px" : "14px",
             flexShrink: 0,
           }}
         >
+          {/* Quick Date/Time Toggle */}
+          <DateTimeQuickToggle />
+
           {/* Notification Bell */}
           <div style={{ position: "relative" }} ref={dropdownRef}>
             <button
               onClick={() => setIsNotificationsOpen((prev) => !prev)}
               style={{
-                background: "#f3f4f6",
-                border: "none",
+                background: unreadCount > 0 ? "rgba(216, 69, 112, 0.1)" : "#f3f4f6",
+                border: unreadCount > 0 ? "1px solid rgba(216, 69, 112, 0.3)" : "none",
                 borderRadius: "50%",
-                width: isSmallMobile ? "34px" : "38px",
-                height: isSmallMobile ? "34px" : "38px",
+                width: isSmallMobile ? "36px" : "40px",
+                height: isSmallMobile ? "36px" : "40px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "1.1rem",
+                fontSize: "1.15rem",
                 cursor: "pointer",
                 position: "relative",
+                transition: "all 0.2s ease",
               }}
-              title="Notifications"
+              title="Notifications & Messages"
             >
               🔔
               {unreadCount > 0 && (
                 <span
                   style={{
                     position: "absolute",
-                    top: "-2px",
-                    right: "-2px",
+                    top: "-3px",
+                    right: "-3px",
                     backgroundColor: "#e11d48",
                     color: "#ffffff",
                     borderRadius: "10px",
                     padding: "2px 6px",
-                    fontSize: "0.65rem",
-                    fontWeight: "700",
+                    fontSize: "0.68rem",
+                    fontWeight: "800",
                     border: "2px solid #ffffff",
+                    boxShadow: "0 2px 5px rgba(225, 29, 72, 0.4)",
+                    animation: "pulseBadge 2s infinite",
                   }}
                 >
-                  {unreadCount > 9 ? "9+" : unreadCount}
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
             </button>
@@ -319,142 +443,232 @@ export const DashboardLayout = () => {
                 style={{
                   position: "absolute",
                   right: 0,
-                  marginTop: "10px",
-                  width: isSmallMobile ? "280px" : "360px",
-                  backgroundColor: "#ffffff",
-                  borderRadius: "12px",
-                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.15)",
-                  border: "1px solid #e5e7eb",
+                  marginTop: "12px",
+                  width: isSmallMobile ? "310px" : "400px",
+                  backgroundColor: "var(--color-card)",
+                  borderRadius: "16px",
+                  boxShadow: "var(--shadow-lg)",
+                  border: "1px solid var(--color-border)",
                   overflow: "hidden",
                   zIndex: 1000,
                 }}
               >
+                {/* Header */}
                 <div
                   style={{
-                    padding: "12px 16px",
-                    borderBottom: "1px solid #f3f4f6",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    backgroundColor: "#fafafa",
+                    padding: "14px 18px 10px",
+                    borderBottom: "1px solid var(--color-border)",
+                    backgroundColor: "var(--color-card)",
                   }}
                 >
-                  <div>
-                    <h4
-                      style={{
-                        margin: 0,
-                        fontSize: "0.9rem",
-                        color: "#111827",
-                      }}
-                    >
-                      Notifications
-                    </h4>
-                    <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-                      {unreadCount} unread
-                    </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <h4
+                        style={{
+                          margin: 0,
+                          fontSize: "0.95rem",
+                          fontWeight: "800",
+                          color: "var(--color-dark)",
+                        }}
+                      >
+                        Notifications & Messages
+                      </h4>
+                      {unreadCount > 0 && (
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: "700",
+                            backgroundColor: "rgba(216, 69, 112, 0.12)",
+                            color: "var(--color-primary)",
+                            padding: "2px 8px",
+                            borderRadius: "999px",
+                          }}
+                        >
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--color-primary)",
+                          fontSize: "0.78rem",
+                          fontWeight: "700",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Mark all read
+                      </button>
+                    )}
                   </div>
-                  {unreadCount > 0 && (
+
+                  {/* Filter Tabs */}
+                  <div style={{ display: "flex", gap: "6px" }}>
                     <button
-                      onClick={markAllAsRead}
+                      onClick={() => setNotifFilter("ALL")}
                       style={{
-                        background: "none",
-                        border: "none",
-                        color: "#2563eb",
+                        padding: "4px 10px",
                         fontSize: "0.75rem",
-                        fontWeight: "600",
+                        fontWeight: "700",
+                        borderRadius: "6px",
+                        border: "none",
                         cursor: "pointer",
+                        backgroundColor: notifFilter === "ALL" ? "var(--color-primary)" : "var(--color-card-subtle)",
+                        color: notifFilter === "ALL" ? "#FFFFFF" : "var(--color-muted)",
                       }}
                     >
-                      Mark all read
+                      All ({notifications.length})
                     </button>
-                  )}
+                    <button
+                      onClick={() => setNotifFilter("MESSAGES")}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: "pointer",
+                        backgroundColor: notifFilter === "MESSAGES" ? "var(--color-primary)" : "var(--color-card-subtle)",
+                        color: notifFilter === "MESSAGES" ? "#FFFFFF" : "var(--color-muted)",
+                      }}
+                    >
+                      💬 Messages
+                    </button>
+                    <button
+                      onClick={() => setNotifFilter("BOOKINGS")}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: "0.75rem",
+                        fontWeight: "700",
+                        borderRadius: "6px",
+                        border: "none",
+                        cursor: "pointer",
+                        backgroundColor: notifFilter === "BOOKINGS" ? "var(--color-primary)" : "var(--color-card-subtle)",
+                        color: notifFilter === "BOOKINGS" ? "#FFFFFF" : "var(--color-muted)",
+                      }}
+                    >
+                      📅 Bookings
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ maxHeight: "360px", overflowY: "auto" }}>
+                {/* Notifications List */}
+                <div style={{ maxHeight: "380px", overflowY: "auto" }}>
                   {loadingNotifications ? (
                     <div
                       style={{
-                        padding: "20px",
+                        padding: "24px",
                         textAlign: "center",
-                        color: "#6b7280",
+                        color: "var(--color-muted)",
                         fontSize: "0.85rem",
                       }}
                     >
                       Loading notifications...
                     </div>
-                  ) : notifications.length === 0 ? (
+                  ) : filteredNotifications.length === 0 ? (
                     <div
                       style={{
-                        padding: "20px",
+                        padding: "32px 20px",
                         textAlign: "center",
-                        color: "#9ca3af",
-                        fontSize: "0.85rem",
+                        color: "var(--color-muted-light)",
+                        fontSize: "0.88rem",
                       }}
                     >
-                      No notifications right now
+                      <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "6px" }}>📭</span>
+                      No notifications found in this view
                     </div>
                   ) : (
-                    notifications.map((item) => (
+                    filteredNotifications.map((item) => (
                       <div
                         key={item.id}
-                        onClick={() =>
-                          handleNotificationClick(item.id, item.link)
-                        }
+                        onClick={() => handleNotificationClick(item)}
                         style={{
                           display: "flex",
                           alignItems: "flex-start",
                           gap: "12px",
-                          padding: "12px 16px",
-                          borderBottom: "1px solid #f3f4f6",
-                          backgroundColor: item.read ? "#ffffff" : "#f0f9ff",
+                          padding: "12px 18px",
+                          borderBottom: "1px solid var(--color-border)",
+                          backgroundColor: item.read ? "var(--color-card)" : "var(--color-primary-light)",
                           cursor: "pointer",
+                          transition: "background-color 0.15s ease",
                         }}
                       >
-                        <span style={{ fontSize: "1.2rem", marginTop: "2px" }}>
+                        <span style={{ fontSize: "1.3rem", marginTop: "2px", flexShrink: 0 }}>
                           {item.icon}
                         </span>
-                        <div style={{ flex: 1 }}>
-                          <p
-                            style={{
-                              margin: 0,
-                              fontSize: "0.85rem",
-                              fontWeight: item.read ? "600" : "700",
-                              color: "#111827",
-                            }}
-                          >
-                            {item.title}
-                          </p>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: "0.88rem",
+                                fontWeight: item.read ? "600" : "800",
+                                color: "var(--color-dark)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {item.title}
+                            </p>
+                            {!item.read && (
+                              <span
+                                style={{
+                                  width: "8px",
+                                  height: "8px",
+                                  backgroundColor: "var(--color-primary)",
+                                  borderRadius: "50%",
+                                  flexShrink: 0,
+                                  marginLeft: "6px",
+                                }}
+                              />
+                            )}
+                          </div>
                           <p
                             style={{
                               margin: "2px 0 0 0",
-                              fontSize: "0.8rem",
-                              color: item.read ? "#6b7280" : "#374151",
-                              lineHeight: "1.35",
+                              fontSize: "0.82rem",
+                              color: item.read ? "var(--color-muted)" : "var(--color-dark-muted)",
+                              lineHeight: "1.4",
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
                             }}
                           >
                             {item.message}
                           </p>
-                          <span
-                            style={{
-                              fontSize: "0.7rem",
-                              color: "#9ca3af",
-                              marginTop: "6px",
-                              display: "block",
-                            }}
-                          >
-                            {item.time}
-                          </span>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>
+                            <span style={{ fontSize: "0.72rem", color: "var(--color-muted-light)" }}>
+                              {item.time} {item.date ? `· ${item.date}` : ""}
+                            </span>
+                            <span style={{ fontSize: "0.72rem", color: "var(--color-primary)", fontWeight: "700" }}>
+                              View details →
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
+
                 {/* View all link */}
                 <div
                   style={{
                     padding: "10px 16px",
-                    borderTop: "1px solid #f3f4f6",
+                    borderTop: "1px solid var(--color-border)",
                     textAlign: "center",
+                    backgroundColor: "var(--color-card-subtle)",
                   }}
                 >
                   <button
@@ -465,13 +679,13 @@ export const DashboardLayout = () => {
                     style={{
                       background: "none",
                       border: "none",
-                      color: "#db2777",
-                      fontSize: "0.8rem",
-                      fontWeight: "600",
+                      color: "var(--color-primary)",
+                      fontSize: "0.82rem",
+                      fontWeight: "700",
                       cursor: "pointer",
                     }}
                   >
-                    View all notifications →
+                    View all notifications & messages →
                   </button>
                 </div>
               </div>
@@ -494,45 +708,88 @@ export const DashboardLayout = () => {
                 transition: "background 0.2s ease",
               }}
             >
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-primary, #e91e63)",
-                  color: "#ffffff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "700",
-                  fontSize: "0.95rem",
-                  boxShadow: "0 2px 6px rgba(233,30,99,0.25)",
-                }}
-              >
-                {(user?.fullName || user?.name || "U").charAt(0).toUpperCase()}
-              </div>
+              {(() => {
+                const rawImg =
+                  user?.profileImage ||
+                  user?.profile_image ||
+                  user?.avatar ||
+                  user?.image ||
+                  user?.profilePicture ||
+                  user?.photo;
+                const avatarSrc = rawImg
+                  ? (rawImg.startsWith("http://") || rawImg.startsWith("https://") || rawImg.startsWith("data:")
+                      ? rawImg
+                      : `http://localhost:5000/${rawImg.replace(/^\/+/, "")}`)
+                  : null;
+
+                return (
+                  <>
+                    {avatarSrc ? (
+                      <img
+                        src={avatarSrc}
+                        alt={user?.fullName || "User"}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          if (e.target.nextSibling) {
+                            e.target.nextSibling.style.display = "flex";
+                          }
+                        }}
+                        style={{
+                          width: isSmallMobile ? "34px" : "38px",
+                          height: isSmallMobile ? "34px" : "38px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "2px solid var(--color-primary)",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      style={{
+                        display: avatarSrc ? "none" : "flex",
+                        width: isSmallMobile ? "34px" : "38px",
+                        height: isSmallMobile ? "34px" : "38px",
+                        borderRadius: "50%",
+                        backgroundColor: "var(--color-primary)",
+                        color: "#ffffff",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: "700",
+                        fontSize: "0.95rem",
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                  </>
+                );
+              })()}
+
               {!isSmallMobile && (
-                <div style={{ textAlign: "left" }}>
-                  <span
+                <div style={{ textAlign: "left", lineHeight: 1.2 }}>
+                  <div
                     style={{
                       fontSize: "0.85rem",
                       fontWeight: "700",
-                      color: "#111827",
-                      display: "block",
-                      lineHeight: "1.2",
+                      color: "var(--color-dark)",
+                      maxWidth: "110px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {user?.fullName || user?.name || "User"}
-                  </span>
-                  <span
+                    {user?.fullName || "User"}
+                  </div>
+                  <div
                     style={{
                       fontSize: "0.7rem",
-                      color: "#6b7280",
-                      fontWeight: "500",
+                      fontWeight: "600",
+                      color: "var(--color-muted)",
+                      textTransform: "capitalize",
                     }}
                   >
-                    {currentRole}
-                  </span>
+                    {currentRole.toLowerCase()}
+                  </div>
                 </div>
               )}
             </button>
@@ -543,23 +800,99 @@ export const DashboardLayout = () => {
                 style={{
                   position: "absolute",
                   right: 0,
-                  marginTop: "8px",
-                  width: "220px",
-                  backgroundColor: "#ffffff",
+                  marginTop: "10px",
+                  width: "240px",
+                  backgroundColor: "var(--color-card)",
                   borderRadius: "14px",
-                  boxShadow: "0 10px 30px -5px rgba(0,0,0,0.15)",
-                  border: "1px solid #e5e7eb",
+                  boxShadow: "0 14px 35px -5px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--color-border)",
+                  border: "1px solid var(--color-border)",
                   overflow: "hidden",
                   zIndex: 1000,
                 }}
               >
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #f3f4f6", backgroundColor: "#fafafa" }}>
-                  <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: "700", color: "#111827" }}>
-                    {user?.fullName || user?.name || "User"}
-                  </p>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "0.75rem", color: "#6b7280" }}>
-                    {user?.email || "owner@salon.com"}
-                  </p>
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    borderBottom: "1px solid var(--color-border)",
+                    backgroundColor: "var(--color-card-subtle)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  {(() => {
+                    const rawImg =
+                      user?.profileImage ||
+                      user?.profile_image ||
+                      user?.avatar ||
+                      user?.image ||
+                      user?.profilePicture ||
+                      user?.photo;
+                    const avatarSrc = rawImg
+                      ? (rawImg.startsWith("http://") || rawImg.startsWith("https://") || rawImg.startsWith("data:")
+                          ? rawImg
+                          : `http://localhost:5000/${rawImg.replace(/^\/+/, "")}`)
+                      : null;
+
+                    return avatarSrc ? (
+                      <img
+                        src={avatarSrc}
+                        alt="User"
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: "1.5px solid var(--color-primary)",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          backgroundColor: "var(--color-primary)",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: "700",
+                          fontSize: "0.9rem",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    );
+                  })()}
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "0.88rem",
+                        fontWeight: "800",
+                        color: "var(--color-dark)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {user?.fullName || "User Account"}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.74rem",
+                        color: "var(--color-muted)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {user?.phone || user?.email || "Veloura Member"}
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ padding: "6px 0" }}>
@@ -611,14 +944,214 @@ export const DashboardLayout = () => {
         </div>
       </header>
 
+      {/* ─── FLOATING TOAST POP-OUT NOTIFICATION ─── */}
+      {activePopupNotification && (
+        <div
+          style={{
+            position: "fixed",
+            top: "75px",
+            right: "20px",
+            zIndex: 9999,
+            backgroundColor: "var(--color-card)",
+            borderRadius: "14px",
+            boxShadow: "var(--shadow-lg)",
+            borderLeft: "5px solid var(--color-primary)",
+            border: "1px solid var(--color-border)",
+            padding: "16px 18px",
+            maxWidth: "380px",
+            width: "calc(100vw - 40px)",
+            animation: "slideInRight 0.35s ease-out",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <span style={{ fontSize: "1.4rem" }}>{activePopupNotification.icon}</span>
+              <div>
+                <h4 style={{ margin: "0 0 4px 0", fontSize: "0.95rem", fontWeight: "800", color: "var(--color-dark)" }}>
+                  {activePopupNotification.title}
+                </h4>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.84rem",
+                    color: "var(--color-muted)",
+                    lineHeight: "1.4",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {activePopupNotification.message}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActivePopupNotification(null)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--color-muted-light)",
+                fontSize: "1.1rem",
+                cursor: "pointer",
+                padding: "2px",
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+            <button
+              onClick={() => setActivePopupNotification(null)}
+              style={{
+                padding: "5px 12px",
+                fontSize: "0.78rem",
+                fontWeight: "600",
+                color: "var(--color-muted)",
+                backgroundColor: "var(--color-card-subtle)",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Dismiss
+            </button>
+            <button
+              onClick={() => handleNotificationClick(activePopupNotification)}
+              style={{
+                padding: "5px 14px",
+                fontSize: "0.78rem",
+                fontWeight: "700",
+                color: "#FFFFFF",
+                backgroundColor: "var(--color-primary)",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Open Message
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FULL MESSAGE DETAILS MODAL ─── */}
+      {selectedMessageModal && (
+        <div style={modalOverlayStyle}>
+          <div
+            style={{
+              ...modalContainerStyle,
+              maxWidth: "520px",
+              padding: "28px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "1.8rem" }}>{selectedMessageModal.icon}</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "800", color: "var(--color-dark)" }}>
+                    {selectedMessageModal.title}
+                  </h3>
+                  <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>
+                    Received: {selectedMessageModal.time} {selectedMessageModal.date ? `· ${selectedMessageModal.date}` : ""}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedMessageModal(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.4rem",
+                  color: "var(--color-muted)",
+                  cursor: "pointer",
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Message Body Box */}
+            <div
+              style={{
+                backgroundColor: "var(--color-card-subtle)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "12px",
+                padding: "16px",
+                fontSize: "0.92rem",
+                color: "var(--color-dark)",
+                lineHeight: "1.6",
+                whiteSpace: "pre-wrap",
+                maxHeight: "300px",
+                overflowY: "auto",
+                marginBottom: "20px",
+              }}
+            >
+              {selectedMessageModal.message}
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard?.writeText(selectedMessageModal.message);
+                  alert("Message details copied to clipboard!");
+                }}
+                style={{
+                  padding: "8px 14px",
+                  fontSize: "0.82rem",
+                  fontWeight: "600",
+                  color: "var(--color-dark)",
+                  backgroundColor: "var(--color-card-subtle)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                📋 Copy Details
+              </button>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => {
+                    setSelectedMessageModal(null);
+                    navigate(getNotificationsPath());
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: "0.85rem",
+                    fontWeight: "600",
+                    color: "var(--color-primary)",
+                    backgroundColor: "rgba(216, 69, 112, 0.08)",
+                    border: "1px solid rgba(216, 69, 112, 0.2)",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  All Notifications
+                </button>
+                <Button
+                  onClick={() => setSelectedMessageModal(null)}
+                  style={{ padding: "8px 18px", fontSize: "0.85rem" }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
         <div style={modalOverlayStyle}>
           <div style={modalContainerStyle}>
-            <h3 style={{ margin: "0 0 8px 0", fontSize: "1.15rem", fontWeight: "700", color: "#111827" }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: "1.15rem", fontWeight: "700", color: "var(--color-dark)" }}>
               Confirm Logout
             </h3>
-            <p style={{ margin: "0 0 20px 0", fontSize: "0.9rem", color: "#6b7280" }}>
+            <p style={{ margin: "0 0 20px 0", fontSize: "0.9rem", color: "var(--color-muted)" }}>
               Are you sure you want to log out of your salon platform account?
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
@@ -645,6 +1178,31 @@ export const DashboardLayout = () => {
       >
         <Outlet />
       </main>
+
+      {/* Keyframe animations */}
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes pulseBadge {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.18);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -657,7 +1215,7 @@ const dropdownMenuItemStyle = {
   padding: "10px 16px",
   fontSize: "0.85rem",
   fontWeight: "600",
-  color: "#374151",
+  color: "var(--color-dark)",
   background: "none",
   border: "none",
   cursor: "pointer",
@@ -671,7 +1229,7 @@ const modalOverlayStyle = {
   left: 0,
   width: "100vw",
   height: "100vh",
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  backgroundColor: "rgba(0, 0, 0, 0.6)",
   backdropFilter: "blur(4px)",
   zIndex: 2000,
   display: "flex",
@@ -681,12 +1239,13 @@ const modalOverlayStyle = {
 };
 
 const modalContainerStyle = {
-  backgroundColor: "#ffffff",
+  backgroundColor: "var(--color-card)",
   borderRadius: "16px",
   padding: "24px",
   maxWidth: "400px",
   width: "100%",
-  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+  boxShadow: "var(--shadow-lg)",
+  border: "1px solid var(--color-border)",
 };
 
 export default DashboardLayout;

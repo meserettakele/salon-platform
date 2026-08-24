@@ -9,6 +9,7 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useDateTime } from "../../context/DateTimeContext";
 import { Card } from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
@@ -18,15 +19,16 @@ import notificationService from "../../services/notificationservice";
 
 export const CustomerDashboard = () => {
   const { user } = useAuth();
+  const { formatDate, formatTime } = useDateTime();
   const navigate = useNavigate();
 
   const [nextAppointment, setNextAppointment] = useState(null);
   const [acceptedBookings, setAcceptedBookings] = useState([]);
   const [stats, setStats] = useState({
-    total: 0,
+    active: 0,
     accepted: 0,
     completed: 0,
-    rejected: 0,
+    cancelled: 0,
   });
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +42,7 @@ export const CustomerDashboard = () => {
     return "Good Evening";
   };
 
-  const currentDateString = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const currentDateString = formatDate(new Date(), { includeWeekday: true });
 
   useEffect(() => {
     fetchOverviewData();
@@ -398,8 +395,8 @@ export const CustomerDashboard = () => {
 
               <div style={{ fontSize: "0.95rem" }}>
                 📅 <strong>Date:</strong>{" "}
-                {nextAppointment.bookingDate || nextAppointment.date} at{" "}
-                {nextAppointment.startTime || nextAppointment.time}
+                {formatDate(nextAppointment.appointmentDate || nextAppointment.bookingDate || nextAppointment.date)} at{" "}
+                {formatTime(nextAppointment.appointmentTime || nextAppointment.startTime || nextAppointment.time)}
               </div>
 
               <div

@@ -6,17 +6,20 @@ const {
   markAsRead,
   markAllAsRead,
   createAdminNotification,
+  submitContactMessage,
 } = require("../controllers/notificationController");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-router.use(protect);
+// Public contact submission endpoint (open to all website visitors & prospective owners)
+router.post("/contact", submitContactMessage);
 
-// Unified endpoints for all roles
-router.get("/", getNotifications);
-router.patch("/read-all", markAllAsRead);
-router.patch("/:id/read", markAsRead);
+// Protected endpoints for authenticated users
+router.get("/", protect, getNotifications);
+router.patch("/read-all", protect, markAllAsRead);
+router.patch("/:id/read", protect, markAsRead);
 
 // Admin-only creation endpoint
-router.post("/admin/create", authorize("ADMIN"), createAdminNotification);
+router.post("/admin/create", protect, authorize("ADMIN"), createAdminNotification);
 
 module.exports = router;
+

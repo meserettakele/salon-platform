@@ -58,6 +58,27 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+
+    telegramChatId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    telegramUsername: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    telegramAuthToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    telegramNotifyEnabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+      allowNull: false,
+    },
   },
   {
     tableName: "users",

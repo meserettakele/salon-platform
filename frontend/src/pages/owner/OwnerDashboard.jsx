@@ -17,12 +17,14 @@ import {
   FiTrendingUp,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useDateTime } from "../../context/DateTimeContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import api from "../../services/api";
 
 export const OwnerDashboard = () => {
+  const { formatDate, formatTime } = useDateTime();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -41,6 +43,9 @@ export const OwnerDashboard = () => {
   const [pendingRequestsList, setPendingRequestsList] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [recentNotifications, setRecentNotifications] = useState([]);
+  const [rejectModalBooking, setRejectModalBooking] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [submittingReject, setSubmittingReject] = useState(false);
 
   const fetchDashboardData = async (isManualRefresh = false) => {
     try {
@@ -150,6 +155,24 @@ export const OwnerDashboard = () => {
     }
   };
 
+  const handleConfirmReject = async () => {
+    if (!rejectModalBooking) return;
+    try {
+      setSubmittingReject(true);
+      const reason = rejectionReason.trim() || "Declined by salon";
+      await api.patch(`/owner/bookings/${rejectModalBooking.id}/reject`, {
+        reason,
+      });
+      setRejectModalBooking(null);
+      setRejectionReason("");
+      fetchDashboardData(true);
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to reject booking");
+    } finally {
+      setSubmittingReject(false);
+    }
+  };
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good Morning";
@@ -157,12 +180,7 @@ export const OwnerDashboard = () => {
     return "Good Evening";
   };
 
-  const currentDateString = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const currentDateString = formatDate(new Date(), { includeWeekday: true });
 
   if (loading) return <Loader />;
 
@@ -364,7 +382,7 @@ export const OwnerDashboard = () => {
           style={{
             fontSize: "0.95rem",
             fontWeight: "700",
-            color: "#111827",
+            color: "var(--color-dark)",
             margin: "0 0 14px 0",
           }}
         >
@@ -409,7 +427,7 @@ export const OwnerDashboard = () => {
                 style={{
                   fontSize: "1.05rem",
                   fontWeight: "700",
-                  color: "#111827",
+                  color: "var(--color-dark)",
                   margin: 0,
                 }}
               >
@@ -418,7 +436,7 @@ export const OwnerDashboard = () => {
               <p
                 style={{
                   fontSize: "0.8rem",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                   margin: "2px 0 0 0",
                 }}
               >
@@ -457,9 +475,11 @@ export const OwnerDashboard = () => {
                 const employeeName =
                   req.employee?.name || req.employeeName || "Any Staff";
                 const dateStr = req.appointmentDate
-                  ? req.appointmentDate.split("T")[0]
-                  : req.date || "Today";
-                const timeStr = req.appointmentTime || req.time || "TBD";
+                  ? formatDate(req.appointmentDate)
+                  : "Today";
+                const timeStr = req.appointmentTime
+                  ? formatTime(req.appointmentTime)
+                  : (req.time ? formatTime(req.time) : "TBD");
 
                 return (
                   <div key={req.id} style={tableRowStyle}>
@@ -467,19 +487,19 @@ export const OwnerDashboard = () => {
                       <strong
                         style={{
                           fontSize: "0.88rem",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                           display: "block",
                         }}
                       >
                         {customerName}
                       </strong>
-                      <span style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+                      <span style={{ fontSize: "0.78rem", color: "var(--color-muted)" }}>
                         {serviceName} • {employeeName}
                       </span>
                       <span
                         style={{
                           fontSize: "0.72rem",
-                          color: "#9ca3af",
+                          color: "var(--color-muted-light)",
                           display: "block",
                           marginTop: "2px",
                         }}
@@ -508,7 +528,10 @@ export const OwnerDashboard = () => {
                         <FiCheck /> Accept
                       </button>
                       <button
-                        onClick={() => handleAction(req.id, "reject")}
+                        onClick={() => {
+                          setRejectModalBooking(req);
+                          setRejectionReason("");
+                        }}
                         style={{
                           padding: "6px 12px",
                           backgroundColor: "#ef4444",
@@ -541,7 +564,7 @@ export const OwnerDashboard = () => {
                 style={{
                   fontSize: "1.05rem",
                   fontWeight: "700",
-                  color: "#111827",
+                  color: "var(--color-dark)",
                   margin: 0,
                 }}
               >
@@ -550,7 +573,7 @@ export const OwnerDashboard = () => {
               <p
                 style={{
                   fontSize: "0.8rem",
-                  color: "#6b7280",
+                  color: "var(--color-muted)",
                   margin: "2px 0 0 0",
                 }}
               >
@@ -576,11 +599,11 @@ export const OwnerDashboard = () => {
               <FiTrendingUp
                 style={{
                   fontSize: "2rem",
-                  color: "#9ca3af",
+                  color: "var(--color-muted-light)",
                   marginBottom: "8px",
                 }}
               />
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "#6b7280" }}>
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-muted)" }}>
                 No transactions recorded yet.
               </p>
             </div>
@@ -594,11 +617,8 @@ export const OwnerDashboard = () => {
                 const employeeName =
                   txn.employee?.name || null;
                 const dateStr = txn.appointmentDate
-                  ? new Date(txn.appointmentDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "—";
+                  ? formatDate(txn.appointmentDate)
+                  : (txn.createdAt ? formatDate(txn.createdAt) : "—");
                 const amount = txn.payment?.amount
                   ? `$${Number(txn.payment.amount).toFixed(2)}`
                   : "—";
@@ -636,13 +656,13 @@ export const OwnerDashboard = () => {
                         <strong
                           style={{
                             fontSize: "0.88rem",
-                            color: "#111827",
+                            color: "var(--color-dark)",
                             display: "block",
                           }}
                         >
                           {customerName}
                         </strong>
-                        <span style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+                        <span style={{ fontSize: "0.76rem", color: "var(--color-muted)" }}>
                           {serviceName}{employeeName ? ` • ${employeeName}` : ""} • {dateStr}
                         </span>
                       </div>
@@ -653,7 +673,7 @@ export const OwnerDashboard = () => {
                         style={{
                           display: "block",
                           fontSize: "0.92rem",
-                          color: isPaid ? "#059669" : "#374151",
+                          color: isPaid ? "#059669" : "var(--color-dark)",
                           fontWeight: "700",
                         }}
                       >
@@ -683,6 +703,191 @@ export const OwnerDashboard = () => {
           )}
         </Card>
       </div>
+
+      {/* REJECTION REASON MODAL */}
+      {rejectModalBooking && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2000,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "1.15rem",
+                  fontWeight: "700",
+                  color: "#dc2626",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                Reject Appointment #{rejectModalBooking.id}
+              </h3>
+              <button
+                onClick={() => setRejectModalBooking(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: "#6b7280",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#4b5563",
+                marginBottom: "14px",
+                lineHeight: "1.4",
+              }}
+            >
+              Please provide a reason for declining this request. This will be sent directly to the customer on their dashboard bell and Telegram.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: "700",
+                color: "#374151",
+                marginBottom: "8px",
+              }}
+            >
+              Quick Presets:
+            </label>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                marginBottom: "14px",
+              }}
+            >
+              {[
+                "Fully booked at this time",
+                "Specialist unavailable",
+                "Time slot conflict",
+                "Salon closed / maintenance",
+                "Emergency",
+              ].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setRejectionReason(preset)}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid #e5e7eb",
+                    backgroundColor:
+                      rejectionReason === preset ? "#fee2e2" : "#f9fafb",
+                    color: rejectionReason === preset ? "#991b1b" : "#374151",
+                    fontSize: "0.75rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: "700",
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Rejection Note:
+            </label>
+            <textarea
+              rows={3}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="e.g. Fully booked for today. Please pick a slot tomorrow."
+              style={{
+                width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                border: "1px solid #d1d5db",
+                fontSize: "0.85rem",
+                fontFamily: "inherit",
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: "20px",
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+              }}
+            >
+              <Button
+                onClick={() => setRejectModalBooking(null)}
+                variant="secondary"
+                disabled={submittingReject}
+              >
+                Cancel
+              </Button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={submittingReject}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#dc2626",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: "700",
+                  cursor: submittingReject ? "not-allowed" : "pointer",
+                }}
+              >
+                {submittingReject ? "Declining..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -710,13 +915,14 @@ const statIconBox = (bgColor, textColor) => ({
 const statLabelStyle = {
   fontSize: "0.75rem",
   fontWeight: "600",
-  color: "#6b7280",
+  color: "var(--color-muted)",
   display: "block",
 };
 
 const statValueStyle = {
   fontSize: "1.5rem",
   fontWeight: "800",
+  color: "var(--color-dark)",
   margin: "2px 0 0 0",
   fontFamily: "Manrope, sans-serif",
 };
@@ -726,8 +932,8 @@ const tableHeaderContainer = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  borderBottom: "1px solid #f3f4f6",
-  backgroundColor: "#ffffff",
+  borderBottom: "1px solid var(--color-border)",
+  backgroundColor: "var(--color-card)",
 };
 
 const tableRowStyle = {
@@ -735,7 +941,7 @@ const tableRowStyle = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  borderBottom: "1px solid #f8fafc",
+  borderBottom: "1px solid var(--color-border)",
 };
 
 const emptyContainer = {

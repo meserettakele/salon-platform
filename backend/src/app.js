@@ -10,6 +10,7 @@ const customerRoutes = require("./routes/customerRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const employeeBookingRoutes = require("./routes/employeeBookingRoutes");
+const telegramRoutes = require("./routes/telegramRoutes");
 
 app.use(cors());
 
@@ -28,8 +29,9 @@ app.use("/api/v1/customer", customerRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/customer/notifications", notificationRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
-app.use("/api/v1/customer/notifications", notificationRoutes);
 app.use("/api/v1/employee", employeeBookingRoutes);
+app.use("/api/v1/telegram", telegramRoutes);
+app.use("/api/telegram", telegramRoutes);
 
 // Base Verification Route
 app.get("/health", (req, res) => {

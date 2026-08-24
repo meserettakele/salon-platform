@@ -1,5 +1,4 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { authService } from "../services/authService";
@@ -68,9 +67,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = useCallback((updatedData) => {
+    if (!updatedData) return;
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedData };
+      try {
+        localStorage.setItem("auth_user", JSON.stringify(merged));
+      } catch (e) {}
+      return merged;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAuthenticated: !!user, login, logout, loginWithGoogle }}
+      value={{
+        user,
+        setUser,
+        updateUser,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        loginWithGoogle,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -197,14 +197,14 @@ const SalonsManagement = () => {
             style={{
               fontSize: "1.75rem",
               fontWeight: "700",
-              color: "#111827",
+              color: "var(--color-dark)",
               margin: 0,
             }}
           >
             🏢 Salons Management
           </h1>
           <p
-            style={{ fontSize: "0.875rem", color: "#6b7280", marginTop: "4px" }}
+            style={{ fontSize: "0.875rem", color: "var(--color-muted)", marginTop: "4px" }}
           >
             Approve, manage, or onboard new salon partners.
           </p>
@@ -364,7 +364,7 @@ const SalonsManagement = () => {
       {showAddModal && (
         <div style={modalBackdropStyle}>
           <div style={{ ...modalContentStyle, maxWidth: "650px" }}>
-            <h2 style={{ marginTop: 0, fontSize: "1.25rem", color: "#111827" }}>
+            <h2 style={{ marginTop: 0, fontSize: "1.25rem", color: "var(--color-dark)" }}>
               Register New Salon
             </h2>
             <form onSubmit={handleRegisterSalon}>
@@ -479,13 +479,13 @@ const SalonsManagement = () => {
 };
 
 // Styles
-const thStyle = { padding: "12px 16px", color: "#4b5563", fontWeight: "600" };
-const tdStyle = { padding: "12px 16px", color: "#111827" };
+const thStyle = { padding: "12px 16px", color: "var(--color-muted)", fontWeight: "600" };
+const tdStyle = { padding: "12px 16px", color: "var(--color-dark)" };
 const sectionHeaderStyle = {
   fontSize: "0.9rem",
-  color: "#db2777",
+  color: "var(--color-primary)",
   margin: "16px 0 8px 0",
-  borderBottom: "1px solid #f3f4f6",
+  borderBottom: "1px solid var(--color-border)",
   paddingBottom: "4px",
 };
 const formGridStyle = {
@@ -499,14 +499,16 @@ const modalBackdropStyle = {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.5)",
+  backgroundColor: "rgba(0,0,0,0.6)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   zIndex: 1000,
 };
 const modalContentStyle = {
-  backgroundColor: "#fff",
+  backgroundColor: "var(--color-card)",
+  border: "1px solid var(--color-border)",
+  boxShadow: "var(--shadow-lg)",
   padding: "24px",
   borderRadius: "12px",
   width: "100%",

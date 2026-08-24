@@ -13,6 +13,7 @@ import {
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
+import { useDateTime } from "../../context/DateTimeContext";
 import api from "../../services/api";
 
 const STATUS_FILTERS = [
@@ -25,6 +26,7 @@ const STATUS_FILTERS = [
 ];
 
 export const EmployeeBookings = () => {
+  const { formatDate, formatTime } = useDateTime();
   const [bookings, setBookings] = useState([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -244,42 +246,6 @@ export const EmployeeBookings = () => {
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   };
 
-  const formatDate = (date) => {
-    if (!date) return "Date not available";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return date;
-    }
-
-    return parsedDate.toLocaleDateString("en-US", {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (time) => {
-    if (!time) return "Time not available";
-
-    // Handles "14:30:00"
-    const parts = String(time).split(":");
-
-    if (parts.length < 2) return time;
-
-    const hour = Number(parts[0]);
-    const minute = parts[1];
-
-    if (Number.isNaN(hour)) return time;
-
-    const suffix = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-
-    return `${displayHour}:${minute} ${suffix}`;
-  };
-
   if (loading) {
     return <Loader />;
   }
@@ -312,7 +278,7 @@ export const EmployeeBookings = () => {
               margin: 0,
               fontSize: "1.8rem",
               fontWeight: "800",
-              color: "#111827",
+              color: "var(--color-dark)",
               fontFamily: "Manrope, sans-serif",
             }}
           >
@@ -322,7 +288,7 @@ export const EmployeeBookings = () => {
           <p
             style={{
               margin: "6px 0 0",
-              color: "#6b7280",
+              color: "var(--color-muted)",
               fontSize: "0.9rem",
             }}
           >
@@ -544,7 +510,7 @@ export const EmployeeBookings = () => {
                           margin: 0,
                           fontSize: "1rem",
                           fontWeight: "750",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {customerName}
@@ -563,7 +529,7 @@ export const EmployeeBookings = () => {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "4px",
-                            color: "#6b7280",
+                            color: "var(--color-muted)",
                             fontSize: "0.72rem",
                           }}
                         >
@@ -577,7 +543,7 @@ export const EmployeeBookings = () => {
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "4px",
-                              color: "#6b7280",
+                              color: "var(--color-muted)",
                               fontSize: "0.72rem",
                             }}
                           >
@@ -593,10 +559,11 @@ export const EmployeeBookings = () => {
 
                   <div
                     style={{
-                      backgroundColor: "#f9fafb",
+                      backgroundColor: "var(--color-card-subtle)",
                       borderRadius: "12px",
                       padding: "14px",
                       marginBottom: "14px",
+                      border: "1px solid var(--color-border)",
                     }}
                   >
                     <div
@@ -616,7 +583,7 @@ export const EmployeeBookings = () => {
                       <strong
                         style={{
                           fontSize: "0.9rem",
-                          color: "#111827",
+                          color: "var(--color-dark)",
                         }}
                       >
                         {serviceName}
@@ -676,40 +643,63 @@ export const EmployeeBookings = () => {
 
                   {/* Payment */}
 
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 12px",
-                      borderRadius: "10px",
-                      backgroundColor: "#ffffff",
-                      border: "1px solid #f3f4f6",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.78rem",
-                        color: "#6b7280",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Payment
-                    </span>
+                  {/* Payment Details */}
+                  {(() => {
+                    const isPaid = paymentStatus === "PAID";
+                    return (
+                      <div
+                        style={{
+                          borderRadius: "12px",
+                          backgroundColor: isPaid ? "rgba(16, 185, 129, 0.08)" : "rgba(245, 158, 11, 0.08)",
+                          border: isPaid ? "1.5px solid rgba(16, 185, 129, 0.3)" : "1px solid rgba(245, 158, 11, 0.25)",
+                          padding: "12px 14px",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "700", color: isPaid ? "#10B981" : "#D97706", display: "flex", alignItems: "center", gap: "6px" }}>
+                            {isPaid ? "✅ Payment Confirmed" : "⏳ Payment Pending"}
+                          </span>
+                          <span
+                            style={{
+                              ...getPaymentStyle(paymentStatus),
+                              padding: "4px 9px",
+                              borderRadius: "12px",
+                              fontSize: "0.7rem",
+                              fontWeight: "800",
+                            }}
+                          >
+                            {formatStatus(paymentStatus || "UNPAID")}
+                          </span>
+                        </div>
 
-                    <span
-                      style={{
-                        ...getPaymentStyle(paymentStatus),
-                        padding: "4px 9px",
-                        borderRadius: "12px",
-                        fontSize: "0.68rem",
-                        fontWeight: "700",
-                      }}
-                    >
-                      {formatStatus(paymentStatus || "UNPAID")}
-                    </span>
-                  </div>
+                        {isPaid ? (
+                          <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed rgba(16, 185, 129, 0.2)", fontSize: "0.78rem", color: "var(--color-dark)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                              <span style={{ color: "#6b7280" }}>Amount Paid:</span>
+                              <strong style={{ color: "#10B981" }}>ETB {booking.payment?.amount || price}</strong>
+                            </div>
+                            {booking.payment?.paymentMethod && (
+                              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                                <span style={{ color: "#6b7280" }}>Method:</span>
+                                <span>{booking.payment.paymentMethod}</span>
+                              </div>
+                            )}
+                            {booking.payment?.transactionId && (
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <span style={{ color: "#6b7280" }}>Transaction Ref:</span>
+                                <span style={{ fontFamily: "monospace", fontSize: "0.72rem", color: "#374151" }}>{booking.payment.transactionId}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: "6px", fontSize: "0.74rem", color: "#92400e" }}>
+                            Customer has not completed payment yet. Once paid, you can complete this booking.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Actions */}
 
@@ -884,7 +874,7 @@ export const EmployeeBookings = () => {
                     margin: 0,
                     fontSize: "1.15rem",
                     fontWeight: "800",
-                    color: "#111827",
+                    color: "var(--color-dark)",
                   }}
                 >
                   Reject Booking
@@ -894,7 +884,7 @@ export const EmployeeBookings = () => {
                   style={{
                     margin: "5px 0 0",
                     fontSize: "0.8rem",
-                    color: "#6b7280",
+                    color: "var(--color-muted)",
                   }}
                 >
                   Provide a reason for rejecting this appointment.
@@ -909,65 +899,31 @@ export const EmployeeBookings = () => {
                 style={{
                   border: "none",
                   background: "transparent",
-                  cursor: "pointer",
-                  color: "#6b7280",
                   fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: "var(--color-muted)",
                 }}
               >
                 <FiX />
               </button>
             </div>
 
-            {selectedBooking && (
-              <div
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#f9fafb",
-                  borderRadius: "10px",
-                  marginBottom: "16px",
-                  fontSize: "0.82rem",
-                  color: "#374151",
-                }}
-              >
-                <strong>
-                  {selectedBooking.customer?.fullName ||
-                    selectedBooking.customerName ||
-                    "Customer"}
-                </strong>
-                {" • "}
-                {selectedBooking.service?.name ||
-                  selectedBooking.serviceName ||
-                  "Service"}
-              </div>
-            )}
-
-            <label
-              style={{
-                display: "block",
-                marginBottom: "7px",
-                fontSize: "0.82rem",
-                fontWeight: "700",
-                color: "#374151",
-              }}
-            >
-              Rejection Reason
-            </label>
-
             <textarea
+              rows="3"
+              placeholder="e.g., Staff unavailable at requested time..."
               value={rejectionReason}
-              onChange={(event) => setRejectionReason(event.target.value)}
-              placeholder="Example: Staff unavailable"
-              rows={4}
+              onChange={(e) => setRejectionReason(e.target.value)}
               style={{
                 width: "100%",
-                boxSizing: "border-box",
-                resize: "vertical",
-                border: "1px solid #e5e7eb",
+                padding: "12px",
+                border: "1px solid var(--color-border)",
                 borderRadius: "10px",
-                padding: "11px 12px",
-                fontFamily: "inherit",
                 fontSize: "0.85rem",
                 outline: "none",
+                marginBottom: "16px",
+                boxSizing: "border-box",
+                backgroundColor: "var(--color-card)",
+                color: "var(--color-dark)",
               }}
             />
 
@@ -976,18 +932,23 @@ export const EmployeeBookings = () => {
                 display: "flex",
                 justifyContent: "flex-end",
                 gap: "10px",
-                marginTop: "18px",
               }}
             >
-              <Button
-                variant="secondary"
+              <button
                 onClick={() => {
                   setShowRejectModal(false);
                   setSelectedBooking(null);
                 }}
+                style={{
+                  ...actionButtonStyle,
+                  backgroundColor: "var(--color-card-subtle)",
+                  color: "var(--color-dark)",
+                  border: "1px solid var(--color-border)",
+                  padding: "10px 16px",
+                }}
               >
                 Cancel
-              </Button>
+              </button>
 
               <button
                 onClick={handleReject}
@@ -1016,14 +977,14 @@ const detailLabelStyle = {
   alignItems: "center",
   gap: "5px",
   fontSize: "0.68rem",
-  color: "#9ca3af",
+  color: "var(--color-muted-light)",
   marginBottom: "3px",
 };
 
 const detailValueStyle = {
   display: "block",
   fontSize: "0.76rem",
-  color: "#374151",
+  color: "var(--color-dark)",
 };
 
 const actionButtonStyle = {

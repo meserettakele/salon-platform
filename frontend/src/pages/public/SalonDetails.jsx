@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { salonService } from "../../services/salonService";
+import { useDateTime } from "../../context/DateTimeContext";
 import * as CommonComponents from "../../components/common/Button";
 import * as CardComponents from "../../components/common/Card";
 import * as LoaderComponents from "../../components/common/Loader";
@@ -19,6 +20,7 @@ const IMAGE_BASE_URL = "http://localhost:5000/uploads/";
 export const SalonDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { timeFormat, setTimeFormat, formatTime } = useDateTime();
 
   const [salon, setSalon] = useState(null);
   const [activeTab, setActiveTab] = useState("services");
@@ -48,9 +50,12 @@ export const SalonDetails = () => {
 
   const getImageUrl = (imageObj) => {
     if (!imageObj) return "";
-    const url = typeof imageObj === "string" ? imageObj : imageObj.imageUrl;
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    const url =
+      typeof imageObj === "string"
+        ? imageObj
+        : imageObj.imageUrl || imageObj.image || imageObj.photo || imageObj.url;
+    if (!url || typeof url !== "string") return "";
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
 
     let cleanUrl = url.replace(/\\/g, "/").replace(/^\/+/, "");
     if (cleanUrl.startsWith("uploads/")) {
@@ -70,7 +75,7 @@ export const SalonDetails = () => {
 
   // BOOKING ACTION LOGIC
   const handleCreateAppointment = () => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
 
     if (!token) {
       // Unauthenticated: Redirect to login with message
@@ -318,57 +323,139 @@ export const SalonDetails = () => {
           {/* SERVICES TAB */}
           {activeTab === "services" && (
             <div>
-              <h2 style={{ fontSize: "1.3rem", marginBottom: "16px" }}>
+              <h2 style={{ fontSize: "1.3rem", marginBottom: "16px", color: "var(--color-dark, #111)" }}>
                 Services & Pricing
               </h2>
               {salon.services && salon.services.length > 0 ? (
                 <div style={{ display: "grid", gap: "16px" }}>
-                  {salon.services.map((service) => (
-                    <Card
-                      key={service.id}
-                      style={{
-                        padding: "20px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        background: "#fff",
-                        border: "1px solid #eee",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <div>
-                        <h3 style={{ margin: "0 0 6px 0", fontSize: "1.1rem" }}>
-                          {service.name}
-                        </h3>
-                        <p
-                          style={{
-                            margin: "0 0 8px 0",
-                            fontSize: "0.85rem",
-                            color: "#666",
-                          }}
-                        >
-                          {service.description || "No description available."}
-                        </p>
-                        <span style={{ fontSize: "0.8rem", color: "#888" }}>
-                          ⏱ {service.duration} mins
-                        </span>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div
-                          style={{
-                            fontSize: "1.2rem",
-                            fontWeight: "bold",
-                            color: "var(--color-primary, #e91e63)",
-                          }}
-                        >
-                          {service.price} ETB
+                  {salon.services.map((service) => {
+                    const serviceImg = getImageUrl(service.image || service.imageUrl);
+                    return (
+                      <Card
+                        key={service.id}
+                        style={{
+                          padding: "18px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          background: "var(--color-card, #fff)",
+                          border: "1px solid var(--color-border, #eee)",
+                          borderRadius: "12px",
+                          gap: "16px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: "1 1 280px" }}>
+                          {/* Service Image / Icon */}
+                          <div
+                            style={{
+                              width: "64px",
+                              height: "64px",
+                              borderRadius: "12px",
+                              overflow: "hidden",
+                              flexShrink: 0,
+                              backgroundColor: "var(--color-primary-light, rgba(216, 69, 112, 0.08))",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              border: "1px solid var(--color-border, #eee)",
+                            }}
+                          >
+                            {serviceImg ? (
+                              <img
+                                src={serviceImg}
+                                alt={service.name}
+                                onError={(e) => {
+                                  e.target.style.display = "none";
+                                  if (e.target.nextSibling) {
+                                    e.target.nextSibling.style.display = "flex";
+                                  }
+                                }}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                            ) : null}
+                            <span
+                              style={{
+                                display: serviceImg ? "none" : "flex",
+                                fontSize: "1.6rem",
+                              }}
+                            >
+                              💇‍♀️
+                            </span>
+                          </div>
+
+                          {/* Service Details */}
+                          <div style={{ minWidth: 0 }}>
+                            <h3
+                              style={{
+                                margin: "0 0 4px 0",
+                                fontSize: "1.1rem",
+                                fontWeight: "700",
+                                color: "var(--color-dark, #111)",
+                              }}
+                            >
+                              {service.name}
+                            </h3>
+                            <p
+                              style={{
+                                margin: "0 0 6px 0",
+                                fontSize: "0.85rem",
+                                color: "var(--color-muted, #666)",
+                                lineHeight: "1.4",
+                              }}
+                            >
+                              {service.description || "Professional beauty service."}
+                            </p>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span
+                                style={{
+                                  fontSize: "0.78rem",
+                                  fontWeight: "600",
+                                  color: "var(--color-muted, #888)",
+                                  backgroundColor: "var(--color-card-subtle, #f5f5f5)",
+                                  padding: "2px 8px",
+                                  borderRadius: "6px",
+                                }}
+                              >
+                                ⏱️ {service.duration} mins
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+
+                        {/* Pricing & Booking */}
+                        <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+                          <div
+                            style={{
+                              fontSize: "1.25rem",
+                              fontWeight: "800",
+                              color: "var(--color-primary, #e91e63)",
+                            }}
+                          >
+                            {service.price} ETB
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={handleCreateAppointment}
+                            style={{
+                              padding: "6px 14px",
+                              fontSize: "0.82rem",
+                              fontWeight: "700",
+                            }}
+                          >
+                            Book Now
+                          </Button>
+                        </div>
+                      </Card>
+                    );
+                  })}
                 </div>
               ) : (
-                <p style={{ color: "#888", fontStyle: "italic" }}>
+                <p style={{ color: "var(--color-muted, #888)", fontStyle: "italic" }}>
                   No active services listed for this salon.
                 </p>
               )}
@@ -381,17 +468,98 @@ export const SalonDetails = () => {
               style={{
                 padding: "24px",
                 background: "#fff",
-                borderRadius: "8px",
+                borderRadius: "14px",
                 border: "1px solid #eee",
               }}
             >
-              <h2 style={{ fontSize: "1.3rem", marginBottom: "16px" }}>
-                Business Hours
-              </h2>
+              {/* Header with Time Preference Switcher */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                  marginBottom: "20px",
+                  paddingBottom: "14px",
+                  borderBottom: "1px solid #f3f4f6",
+                }}
+              >
+                <div>
+                  <h2 style={{ fontSize: "1.3rem", margin: 0, fontWeight: "800", color: "#111827" }}>
+                    Business Hours
+                  </h2>
+                  <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#6b7280" }}>
+                    Operational schedule for this salon location
+                  </p>
+                </div>
+
+                {/* Time Preference Switcher */}
+                <div
+                  style={{
+                    display: "flex",
+                    backgroundColor: "#f3f4f6",
+                    borderRadius: "8px",
+                    padding: "2px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setTimeFormat("ETHIOPIAN_12H")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "0.75rem",
+                      fontWeight: "700",
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor: timeFormat === "ETHIOPIAN_12H" ? "#18181B" : "transparent",
+                      color: timeFormat === "ETHIOPIAN_12H" ? "#FFFFFF" : "#6B7280",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    🇪🇹 Ethiopian
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeFormat("STANDARD_12H")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "0.75rem",
+                      fontWeight: "700",
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor: timeFormat === "STANDARD_12H" ? "#18181B" : "transparent",
+                      color: timeFormat === "STANDARD_12H" ? "#FFFFFF" : "#6B7280",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    ⏰ 12H (AM/PM)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeFormat("STANDARD_24H")}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: "0.75rem",
+                      fontWeight: "700",
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor: timeFormat === "STANDARD_24H" ? "#18181B" : "transparent",
+                      color: timeFormat === "STANDARD_24H" ? "#FFFFFF" : "#6B7280",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    ⏱️ 24H
+                  </button>
+                </div>
+              </div>
+
               {salon?.businessHours && salon.businessHours.length > 0 ? (
-                <div style={{ display: "grid", gap: "12px" }}>
+                <div style={{ display: "grid", gap: "10px" }}>
                   {salon.businessHours.map((hour) => {
-                    // Fallback matching for database field variations
                     const dayName = hour.day || hour.dayOfWeek || "";
                     const openTime = hour.openingTime || hour.openTime || "";
                     const closeTime = hour.closingTime || hour.closeTime || "";
@@ -400,10 +568,20 @@ export const SalonDetails = () => {
                       hour.isClosed === 1 ||
                       hour.isClosed === "true";
 
-                    // Capitalize day nicely (e.g. MONDAY -> Monday)
                     const formattedDay =
                       dayName.charAt(0).toUpperCase() +
                       dayName.slice(1).toLowerCase();
+
+                    const amharicDays = {
+                      Monday: "ሰኞ",
+                      Tuesday: "ማክሰኞ",
+                      Wednesday: "ረቡዕ",
+                      Thursday: "ሐሙስ",
+                      Friday: "ዓርብ",
+                      Saturday: "ቅዳሜ",
+                      Sunday: "እሑድ",
+                    };
+                    const amDay = amharicDays[formattedDay] || "";
 
                     return (
                       <div
@@ -412,21 +590,31 @@ export const SalonDetails = () => {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          borderBottom: "1px solid #f5f5f5",
-                          paddingBottom: "8px",
+                          borderBottom: "1px solid #f9fafb",
+                          padding: "8px 4px",
                         }}
                       >
-                        <span style={{ fontWeight: "600", color: "#111827" }}>
-                          {formattedDay}
-                        </span>
+                        <div>
+                          <span style={{ fontWeight: "700", color: "#111827", fontSize: "0.95rem" }}>
+                            {formattedDay}
+                          </span>
+                          {amDay && (
+                            <span style={{ fontSize: "0.8rem", color: "var(--color-primary)", fontWeight: "600", marginLeft: "6px" }}>
+                              ({amDay})
+                            </span>
+                          )}
+                        </div>
                         <span
                           style={{
-                            color: isClosed ? "#dc2626" : "#4b5563",
-                            fontWeight: isClosed ? "700" : "500",
+                            color: isClosed ? "#dc2626" : "#374151",
+                            fontWeight: isClosed ? "800" : "700",
                             fontSize: "0.9rem",
+                            backgroundColor: isClosed ? "#fee2e2" : "transparent",
+                            padding: isClosed ? "2px 8px" : "0",
+                            borderRadius: "6px",
                           }}
                         >
-                          {isClosed ? "Closed" : `${openTime} – ${closeTime}`}
+                          {isClosed ? "Closed (ዝግ ነው)" : `${formatTime(openTime)} – ${formatTime(closeTime)}`}
                         </span>
                       </div>
                     );
