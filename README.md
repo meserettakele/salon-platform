@@ -357,26 +357,18 @@ Before running the backend, make sure MySQL is running and the database configur
 
 ---
 
-## 📚 Documentation
+## 📚 Comprehensive Documentation Suite
 
-Detailed project requirements and system information are available in:
+The project includes an enterprise-grade documentation suite located in the [`documentation/`](file:///c:/Users/hp/Desktop/salon-platform/documentation/) directory:
 
-**`documentation/project-requirement.md`**
-
-The documentation includes:
-
-- Project overview
-- Project objectives
-- User roles
-- Functional requirements
-- Booking system
-- Payment system
-- Notification system
-- Authentication and security
-- Database requirements
-- Technology stack
-- Project structure
-- Future improvements
+| Document | Description |
+| :--- | :--- |
+| 🏛️ [**System Architecture & Specs**](file:///c:/Users/hp/Desktop/salon-platform/documentation/SYSTEM_ARCHITECTURE_AND_SPECS.md) | High-level system architecture, Mermaid diagrams, multi-service slot engine, and security specs. |
+| 📡 [**REST API Reference**](file:///c:/Users/hp/Desktop/salon-platform/documentation/API_DOCUMENTATION.md) | Full API specification with request/response schemas, query parameters, and status codes. |
+| 🗄️ [**Database Architecture & ERD**](file:///c:/Users/hp/Desktop/salon-platform/documentation/DATABASE_SCHEMA.md) | Relational ERD diagram, table schemas, data dictionary, and foreign key cascades. |
+| 📸 [**Visual User Manual & Screen Layouts**](file:///c:/Users/hp/Desktop/salon-platform/documentation/VISUAL_USER_GUIDE_AND_SCREENSHOTS.md) | Step-by-step UI walkthroughs, wireframe layouts, and role workflows (Customer, Owner, Employee, Admin). |
+| 🚀 [**Deployment & Configuration Guide**](file:///c:/Users/hp/Desktop/salon-platform/documentation/DEPLOYMENT_AND_SETUP_GUIDE.md) | Environment setup, MySQL setup, Chapa payment gateway, Telegram Bot, Google OAuth, and Nginx/PM2 guide. |
+| 📋 [**Project Requirements Specification**](file:///c:/Users/hp/Desktop/salon-platform/documentation/project-requirement.md) | Detailed functional & non-functional project scope. |
 
 ---
 
