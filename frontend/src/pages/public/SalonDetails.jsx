@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { salonService } from "../../services/salonService";
+import { getImageUrl } from "../../services/api";
 import { useDateTime } from "../../context/DateTimeContext";
 import * as CommonComponents from "../../components/common/Button";
 import * as CardComponents from "../../components/common/Card";
@@ -14,8 +15,6 @@ const Loader =
   (() => (
     <div style={{ textAlign: "center", padding: "60px" }}>Loading...</div>
   ));
-
-const IMAGE_BASE_URL = "http://localhost:5000/uploads/";
 
 export const SalonDetails = () => {
   const { id } = useParams();
@@ -47,22 +46,6 @@ export const SalonDetails = () => {
 
     if (id) fetchSalonDetails();
   }, [id]);
-
-  const getImageUrl = (imageObj) => {
-    if (!imageObj) return "";
-    const url =
-      typeof imageObj === "string"
-        ? imageObj
-        : imageObj.imageUrl || imageObj.image || imageObj.photo || imageObj.url;
-    if (!url || typeof url !== "string") return "";
-    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
-
-    let cleanUrl = url.replace(/\\/g, "/").replace(/^\/+/, "");
-    if (cleanUrl.startsWith("uploads/")) {
-      cleanUrl = cleanUrl.substring(8);
-    }
-    return `${IMAGE_BASE_URL}${cleanUrl}`;
-  };
 
   const calculateAverageRating = (reviews = []) => {
     if (!reviews || reviews.length === 0) return null;

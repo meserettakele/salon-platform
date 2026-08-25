@@ -7,6 +7,7 @@ import ErrorMessage from "../../components/common/ErrorMessage";
 import AdaptiveDatePicker from "../../components/common/AdaptiveDatePicker";
 import { useDateTime } from "../../context/DateTimeContext";
 import bookingService from "../../services/bookingService.js";
+import { getImageUrl } from "../../services/api";
 
 export const BookingFlow = () => {
   const navigate = useNavigate();
@@ -53,9 +54,7 @@ export const BookingFlow = () => {
   const extractData = (res) => res?.data?.data || res?.data || [];
 
   const formatImageUrl = (img) => {
-    if (!img) return null;
-    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("data:")) return img;
-    return `http://localhost:5000/${img.replace(/^\/+/, "")}`;
+    return getImageUrl(img);
   };
 
   const getServiceId = (service) => Number(service.id);

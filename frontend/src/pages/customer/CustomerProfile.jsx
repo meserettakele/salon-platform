@@ -7,9 +7,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { Card } from "../../components/common/Card";
 import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
 import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
-import api from "../../services/api";
+import api, { BACKEND_SERVER_URL } from "../../services/api";
 
 export const CustomerProfile = () => {
   const { user, updateUser } = useAuth();
@@ -40,7 +39,7 @@ export const CustomerProfile = () => {
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
-  const imageBaseUrl = "http://localhost:5000";
+  const imageBaseUrl = BACKEND_SERVER_URL;
 
   // =========================================================
   // LOAD CUSTOMER PROFILE

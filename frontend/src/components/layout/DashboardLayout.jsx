@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useDateTime } from "../../context/DateTimeContext";
 import { Button } from "../common/Button";
 import { DateTimeQuickToggle } from "../common/DateTimeQuickToggle";
-import api from "../../services/api";
+import api, { getImageUrl } from "../../services/api";
 
 export const DashboardLayout = () => {
   const { user, logout } = useAuth();
@@ -716,11 +716,7 @@ export const DashboardLayout = () => {
                   user?.image ||
                   user?.profilePicture ||
                   user?.photo;
-                const avatarSrc = rawImg
-                  ? (rawImg.startsWith("http://") || rawImg.startsWith("https://") || rawImg.startsWith("data:")
-                      ? rawImg
-                      : `http://localhost:5000/${rawImg.replace(/^\/+/, "")}`)
-                  : null;
+                const avatarSrc = rawImg ? getImageUrl(rawImg) : null;
 
                 return (
                   <>
@@ -828,11 +824,7 @@ export const DashboardLayout = () => {
                       user?.image ||
                       user?.profilePicture ||
                       user?.photo;
-                    const avatarSrc = rawImg
-                      ? (rawImg.startsWith("http://") || rawImg.startsWith("https://") || rawImg.startsWith("data:")
-                          ? rawImg
-                          : `http://localhost:5000/${rawImg.replace(/^\/+/, "")}`)
-                      : null;
+                    const avatarSrc = rawImg ? getImageUrl(rawImg) : null;
 
                     return avatarSrc ? (
                       <img

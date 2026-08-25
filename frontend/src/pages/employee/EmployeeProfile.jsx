@@ -17,7 +17,7 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Loader from "../../components/common/Loader";
 import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
-import api from "../../services/api";
+import api, { getImageUrl } from "../../services/api";
 
 export const EmployeeProfile = () => {
   const [loading, setLoading] = useState(true);
@@ -217,11 +217,7 @@ export const EmployeeProfile = () => {
           >
             {profile?.image ? (
               <img
-                src={
-                  profile.image.startsWith("http")
-                    ? profile.image
-                    : `http://localhost:5000/${profile.image}`
-                }
+                src={getImageUrl(profile.image)}
                 alt={profile?.name || "Employee"}
                 style={{
                   width: "100%",

@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { Button } from "../common/Button";
-import api from "../../services/api";
+import api, { getImageUrl } from "../../services/api";
 
 export const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
@@ -193,12 +193,7 @@ export const Sidebar = ({ isOpen, setIsOpen }) => {
             >
               {user?.profileImage ? (
                 <img
-                  src={
-                    user.profileImage.startsWith("http://") ||
-                    user.profileImage.startsWith("https://")
-                      ? user.profileImage
-                      : `http://localhost:5000/${user.profileImage.replace(/^\/+/, "")}`
-                  }
+                  src={getImageUrl(user.profileImage)}
                   alt="Profile"
                   style={{
                     width: "100%",

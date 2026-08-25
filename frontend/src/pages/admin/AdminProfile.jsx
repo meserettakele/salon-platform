@@ -5,8 +5,7 @@ import { Button } from "../../components/common/Button";
 import { Input } from "../../components/common/Input";
 import { ErrorMessage } from "../../components/common/ErrorMessage";
 import { Loader } from "../../components/common/Loader";
-import { DateTimeSettingsCard } from "../../components/common/DateTimeSettingsCard";
-import api from "../../services/api";
+import api, { BACKEND_SERVER_URL, getImageUrl } from "../../services/api";
 
 export const AdminProfile = () => {
   const { user, updateUser } = useAuth();
@@ -40,7 +39,7 @@ export const AdminProfile = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
-  const imageBaseUrl = "http://localhost:5000";
+  const imageBaseUrl = BACKEND_SERVER_URL;
 
   useEffect(() => {
     if (user) {

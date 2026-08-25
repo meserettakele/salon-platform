@@ -14,16 +14,9 @@ import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loader from "../../components/common/Loader";
-import api from "../../services/api";
-const IMAGE_BASE_URL = "http://localhost:5000/";
+import api, { getImageUrl } from "../../services/api";
+
 export const MySalon = () => {
-  const getImageUrl = (url) => {
-    if (!url) return null;
-
-    if (url.startsWith("http")) return url;
-
-    return `http://localhost:5000/${url}`;
-  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);

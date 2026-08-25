@@ -1,8 +1,23 @@
-// src/services/api.js
-import axios from "axios";
+// Base API URL with fallback
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://salon-platform-13xi.onrender.com/api/v1";
+
+export const BACKEND_SERVER_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+  const pathStr =
+    typeof imagePath === "string"
+      ? imagePath
+      : imagePath.imageUrl || imagePath.url || "";
+  if (!pathStr) return "";
+  if (pathStr.startsWith("http://") || pathStr.startsWith("https://")) return pathStr;
+  const cleanPath = pathStr.replace(/\\/g, "/").replace(/^\/+/, "");
+  return `${BACKEND_SERVER_URL}/${cleanPath}`;
+};
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",

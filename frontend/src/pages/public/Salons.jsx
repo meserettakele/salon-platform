@@ -4,6 +4,7 @@ import * as CardComponents from "../../components/common/Card";
 import * as InputComponents from "../../components/common/Input";
 import * as LoaderComponents from "../../components/common/Loader";
 import { salonService } from "../../services/salonService";
+import { getImageUrl } from "../../services/api";
 
 const Card = CardComponents.Card || CardComponents.default || "div";
 const Input = InputComponents.Input || InputComponents.default || "input";
@@ -13,8 +14,6 @@ const Loader =
   (() => (
     <div style={{ textAlign: "center", padding: "40px" }}>Loading...</div>
   ));
-
-const IMAGE_BASE_URL = "http://localhost:5000/uploads/";
 
 export const Salons = () => {
   const navigate = useNavigate();
@@ -88,19 +87,6 @@ export const Salons = () => {
     setSubCity("");
     setCategoryId("All");
     setSearchParams({});
-  };
-
-  const getImageUrl = (imageObj) => {
-    if (!imageObj) return "";
-    const url = typeof imageObj === "string" ? imageObj : imageObj.imageUrl;
-    if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://")) return url;
-    
-    let cleanUrl = url.replace(/\\/g, "/").replace(/^\/+/, "");
-    if (cleanUrl.startsWith("uploads/")) {
-      cleanUrl = cleanUrl.substring(8);
-    }
-    return `${IMAGE_BASE_URL}${cleanUrl}`;
   };
 
   return (

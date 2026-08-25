@@ -1,21 +1,4 @@
-import axios from "axios";
-
-// Base API Configuration matching Express app.js
-const API = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
-});
-
-// Interceptor to attach JWT Token
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+import API from "./api";
 
 export const salonService = {
   /**
@@ -31,7 +14,7 @@ export const salonService = {
     }
 
     const response = await API.get("/customer/salons", { params: cleanParams });
-    return response.data?.data || [];
+    return Array.isArray(response) ? response : response?.data || [];
   },
 
   /**
@@ -39,7 +22,7 @@ export const salonService = {
    */
   getSalonById: async (id) => {
     const response = await API.get(`/customer/salons/${id}`);
-    return response.data?.data;
+    return response?.data || response;
   },
 
   /**
@@ -47,15 +30,14 @@ export const salonService = {
    */
   getCategories: async () => {
     const response = await API.get("/customer/categories");
-    return response.data?.data || [];
+    return Array.isArray(response) ? response : response?.data || [];
   },
 
   /**
    * Submits a new booking request
    */
   createBooking: async (bookingData) => {
-    const response = await API.post("/customer/bookings", bookingData);
-    return response.data;
+    return await API.post("/customer/bookings", bookingData);
   },
 
   /**
@@ -65,15 +47,14 @@ export const salonService = {
     const response = await API.get("/customer/bookings", {
       params: { type },
     });
-    return response.data?.data || [];
+    return Array.isArray(response) ? response : response?.data || [];
   },
 
   /**
    * Cancels an appointment request
    */
   cancelBooking: async (bookingId) => {
-    const response = await API.put(`/customer/bookings/${bookingId}/cancel`);
-    return response.data;
+    return await API.put(`/customer/bookings/${bookingId}/cancel`);
   },
 };
 
