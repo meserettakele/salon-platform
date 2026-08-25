@@ -1,6 +1,6 @@
 const authService = require("../services/authService");
 const { getAuth } = require("firebase-admin/auth");
-require("../config/firebaseAdmin"); // ensure Firebase Admin app is initialized
+const firebaseApp = require("../config/firebaseAdmin");
 
 
 exports.register = async (req, res) => {
@@ -92,6 +92,14 @@ exports.resetPassword = async (req, res) => {
 exports.googleLogin = async (req, res) => {
   try {
     const { idToken } = req.body;
+
+    if (!firebaseApp) {
+      return res.status(503).json({
+        success: false,
+        message: "Google login is currently disabled on this server.",
+        data: null,
+      });
+    }
 
     if (!idToken) {
       return res.status(400).json({
